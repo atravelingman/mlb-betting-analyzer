@@ -76,8 +76,42 @@ class DataService {
     }
 
     async getTeamStats(teamId) {
-        const data = await this.fetchData(API_CONFIG.ENDPOINTS.TEAM_STATS.replace('{teamId}', teamId));
-        return this.processTeamStats(data);
+        try {
+            const endpoint = API_CONFIG.ENDPOINTS.TEAM_STATS.replace('{teamId}', teamId);
+            const data = await this.fetchData(endpoint);
+            
+            if (!data || !data.stats) {
+                throw new Error('Invalid team stats data received');
+            }
+
+            // Find hitting and pitching stats
+            const hittingStats = data.stats.find(stat => stat.group.displayName === 'hitting')?.splits[0]?.stat;
+            const pitchingStats = data.stats.find(stat => stat.group.displayName === 'pitching')?.splits[0]?.stat;
+
+            if (!hittingStats || !pitchingStats) {
+                throw new Error('Missing hitting or pitching stats');
+            }
+
+            return {
+                batting: {
+                    avg: Utils.formatNumber(hittingStats.avg, 3),
+                    obp: Utils.formatNumber(hittingStats.obp, 3),
+                    slg: Utils.formatNumber(hittingStats.slg, 3),
+                    ops: Utils.formatNumber(hittingStats.ops, 3),
+                    iso: Utils.formatNumber(hittingStats.slg - hittingStats.avg, 3),
+                    babip: Utils.formatNumber(hittingStats.babip, 3)
+                },
+                pitching: {
+                    era: Utils.formatNumber(pitchingStats.era, 2),
+                    whip: Utils.formatNumber(pitchingStats.whip, 2),
+                    k9: Utils.formatNumber(pitchingStats.strikeoutsPer9Inn, 1),
+                    bb9: Utils.formatNumber(pitchingStats.walksPer9Inn, 1)
+                }
+            };
+        } catch (error) {
+            console.error('Error fetching team stats:', error);
+            throw new Error(`Failed to fetch team stats: ${error.message}`);
+        }
     }
 
     async getPitcherStats(pitcherId) {
@@ -148,22 +182,33 @@ class DataService {
             // Use proxy URL for all requests to avoid CORS issues
             const proxyUrl = API_CONFIG.PROXY_URL + encodeURIComponent(url);
             
+            console.log('Fetching:', proxyUrl);
+            
             const response = await fetch(proxyUrl, {
-                headers: API_CONFIG.HEADERS,
+                headers: {
+                    ...API_CONFIG.HEADERS,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
                 signal: controller.signal,
                 mode: 'cors'
             });
 
             if (!response.ok) {
-                throw new Error(API_ERRORS.DATA_ERROR);
+                console.error('API Error:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    url: proxyUrl
+                });
+                throw new Error(`${API_ERRORS.DATA_ERROR} (Status: ${response.status})`);
             }
 
             return response;
         } catch (error) {
+            console.error('Request Error:', error);
             if (error.name === 'AbortError') {
                 throw new Error(API_ERRORS.TIMEOUT);
             }
-            throw error;
+            throw new Error(`${API_ERRORS.NETWORK_ERROR}: ${error.message}`);
         } finally {
             clearTimeout(timeoutId);
         }

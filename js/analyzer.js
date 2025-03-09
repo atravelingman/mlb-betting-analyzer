@@ -4,52 +4,68 @@ import { API_CONFIG } from './api-config.js';
 
 export class MLBAnalyzer {
     constructor() {
-        console.log('Initializing MLB Analyzer...');
-        this.initializeElements();
-        this.initializeEventListeners();
-        this.loadTeams();
-        this.lastUpdate = null;
-    }
-
-    async initializeElements() {
+        // Initialize services
+        this.dataService = new DataService();
+        
+        // Cache DOM elements
         this.elements = {
             homeTeamSelect: document.getElementById('homeTeamSelect'),
             awayTeamSelect: document.getElementById('awayTeamSelect'),
             homePitcherSelect: document.getElementById('homePitcherSelect'),
             awayPitcherSelect: document.getElementById('awayPitcherSelect'),
-            weatherSelect: document.getElementById('weather'),
-            marketSpread: document.getElementById('marketSpread'),
-            marketTotal: document.getElementById('marketTotal'),
-            lastUpdate: document.getElementById('lastUpdate'),
-            loading: document.getElementById('loading'),
-            error: document.getElementById('error'),
-            errorMessage: document.getElementById('errorMessage'),
             results: document.getElementById('results')
         };
+        
+        // Initialize state
+        this.teamStats = {};
+        
+        // Initialize event listeners
+        this.initializeEventListeners();
+        
+        // Load initial data
+        this.loadTeams();
     }
 
     initializeEventListeners() {
+        // Team selection handlers
         this.elements.homeTeamSelect.addEventListener('change', () => this.handleTeamSelection('home'));
         this.elements.awayTeamSelect.addEventListener('change', () => this.handleTeamSelection('away'));
-        this.elements.homePitcherSelect.addEventListener('change', () => this.handlePitcherSelection('home'));
-        this.elements.awayPitcherSelect.addEventListener('change', () => this.handlePitcherSelection('away'));
+        
+        // Add loading indicator methods
+        this.showLoading = () => {
+            // Add loading indicator logic here
+            console.log('Loading...');
+        };
+        
+        this.hideLoading = () => {
+            // Remove loading indicator logic here
+            console.log('Loading complete');
+        };
+        
+        this.showError = (message) => {
+            console.error(message);
+            // Add error display logic here
+        };
     }
 
     async loadTeams() {
         try {
             this.showLoading();
-            const teams = await dataService.getTeams();
+            const teams = await this.dataService.getTeams();
             
             if (!teams || teams.length === 0) {
                 throw new Error('No teams data available');
             }
 
+            // Sort teams alphabetically
             teams.sort((a, b) => a.name.localeCompare(b.name));
             
+            // Create dropdown options
             const options = teams.map(team => 
                 `<option value="${team.id}">${team.name}</option>`
             ).join('');
 
+            // Update both dropdowns
             this.elements.homeTeamSelect.innerHTML = '<option value="">Select Team...</option>' + options;
             this.elements.awayTeamSelect.innerHTML = '<option value="">Select Team...</option>' + options;
             
@@ -64,30 +80,53 @@ export class MLBAnalyzer {
 
     async handleTeamSelection(side) {
         const teamSelect = this.elements[`${side}TeamSelect`];
-        const pitcherSelect = this.elements[`${side}PitcherSelect`];
         
         if (!teamSelect.value) {
             this.clearTeamStats(side);
             return;
         }
 
+        const loadingIndicator = document.getElementById(`${side}Loading`);
+        if (loadingIndicator) {
+            loadingIndicator.style.display = 'block';
+        }
+
         try {
             this.showLoading();
-            const [teamStats, roster] = await Promise.all([
-                dataService.getTeamStats(teamSelect.value),
-                this.loadRoster(teamSelect.value)
-            ]);
+            const teamStats = await this.dataService.getTeamStats(teamSelect.value);
+            
+            // Update the UI with the team stats
+            const prefix = side === 'home' ? 'home' : 'away';
+            
+            // Update batting stats
+            document.getElementById(`${prefix}AVG`).value = teamStats.batting.avg;
+            document.getElementById(`${prefix}OBP`).value = teamStats.batting.obp;
+            document.getElementById(`${prefix}SLG`).value = teamStats.batting.slg;
+            document.getElementById(`${prefix}ISO`).value = teamStats.batting.iso;
+            document.getElementById(`${prefix}BABIP`).value = teamStats.batting.babip;
+            
+            // Update pitching stats
+            document.getElementById(`${prefix}ERA`).value = teamStats.pitching.era;
+            document.getElementById(`${prefix}WHIP`).value = teamStats.pitching.whip;
+            document.getElementById(`${prefix}K9`).value = teamStats.pitching.k9;
+            document.getElementById(`${prefix}BB9`).value = teamStats.pitching.bb9;
 
-            this.updateTeamStats(side, teamStats);
-            this.updatePitcherSelect(side, roster);
+            // Store the stats for later use
+            this.teamStats[teamSelect.value] = {
+                name: teamSelect.options[teamSelect.selectedIndex].text,
+                stats: teamStats
+            };
 
-            if (side === 'home') {
-                await this.updateBallparkInfo(teamSelect.value);
-            }
+            console.log(`Updated ${side} team stats:`, teamStats);
         } catch (error) {
+            console.error(`Error loading ${side} team data:`, error);
             this.showError(`Error loading ${side} team data: ${error.message}`);
+            this.clearTeamStats(side);
         } finally {
             this.hideLoading();
+            if (loadingIndicator) {
+                loadingIndicator.style.display = 'none';
+            }
         }
     }
 
@@ -182,27 +221,6 @@ export class MLBAnalyzer {
         stats.forEach(stat => {
             document.getElementById(`${prefix}${stat}`).value = '';
         });
-    }
-
-    showLoading() {
-        this.elements.loading.style.display = 'flex';
-    }
-
-    hideLoading() {
-        this.elements.loading.style.display = 'none';
-    }
-
-    showError(message) {
-        this.elements.errorMessage.textContent = message;
-        this.elements.error.style.display = 'block';
-        setTimeout(() => {
-            this.elements.error.style.display = 'none';
-        }, 5000);
-    }
-
-    updateLastUpdate() {
-        this.lastUpdate = new Date();
-        this.elements.lastUpdate.textContent = this.lastUpdate.toLocaleTimeString();
     }
 
     async analyzeMatchup() {

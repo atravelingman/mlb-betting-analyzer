@@ -1,6 +1,6 @@
 const API_CONFIG = {
     BASE_URL: 'https://statsapi.mlb.com/api/v1',
-    PROXY_URL: 'https://api.allorigins.win/raw?url=',
+    PROXY_URL: 'https://corsproxy.io/?',
     ENDPOINTS: {
         TEAMS: '/teams?sportId=1',
         TEAM_STATS: '/teams/{teamId}/stats?stats=season,statSplits&group=hitting,pitching',
