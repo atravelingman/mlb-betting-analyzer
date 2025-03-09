@@ -37,27 +37,44 @@
             padding: 20px;
             border-radius: 10px;
             margin-bottom: 20px;
+            background-color: white;
         }
-        .form-group { margin-bottom: 1rem; }
+        .form-group { 
+            margin-bottom: 1rem; 
+        }
+        .form-label {
+            font-weight: 500;
+            color: #495057;
+        }
+        .stat-label {
+            font-size: 0.875rem;
+            color: #6c757d;
+            margin-bottom: 0.25rem;
+        }
         #error {
             display: none;
-            color: red;
+            color: #dc3545;
             margin-bottom: 1rem;
-            padding: 0.5rem;
-            border: 1px solid red;
-            border-radius: 4px;
+            padding: 1rem;
+            border: 1px solid #dc3545;
+            border-radius: 8px;
+            background-color: #fff;
         }
         .loading {
             display: none;
             text-align: center;
             margin: 1rem 0;
+            padding: 2rem;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
         .loading-spinner {
             display: inline-block;
-            width: 2rem;
-            height: 2rem;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #0d6efd;
+            width: 3rem;
+            height: 3rem;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #0d6efd;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -69,252 +86,383 @@
             font-size: 0.9rem;
             color: #6c757d;
             margin-bottom: 1rem;
-            font-style: italic;
+            padding: 1rem;
+            background-color: #e9ecef;
+            border-radius: 8px;
         }
         .analysis-section {
-            margin: 20px;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+            background-color: white;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        .status-green { color: green; }
-        .status-yellow { color: #cc9900; }
-        .status-orange { color: #ff6600; }
-        .status-red { color: red; }
+        .status-green { color: #28a745; }
+        .status-yellow { color: #ffc107; }
+        .status-orange { color: #fd7e14; }
+        .status-red { color: #dc3545; }
         .fatigue-indicator {
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
             display: inline-block;
-            margin-right: 5px;
+            margin-right: 8px;
+        }
+        .tooltip-icon {
+            color: #6c757d;
+            font-size: 14px;
+            margin-left: 4px;
+            cursor: help;
+        }
+        .stat-card {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #0d6efd;
+        }
+        .recommendation-card {
+            border-left: 4px solid #0d6efd;
+            padding: 15px;
+            margin-bottom: 10px;
+            background-color: #f8f9fa;
+        }
+        .update-history {
+            max-height: 300px;
+            overflow-y: auto;
         }
     </style>
 </head>
 <body>
     <div class="container mt-5">
-        <h1 class="mb-4">MLB Betting Analyzer</h1>
+        <div class="text-center mb-5">
+            <h1 class="display-4">MLB Betting Analyzer</h1>
+            <p class="lead text-muted">Make data-driven betting decisions with advanced statistical analysis</p>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">How to Use</h5>
+                <ol class="mb-0">
+                    <li>Select home and away teams</li>
+                    <li>Choose starting pitchers</li>
+                    <li>Review team statistics (auto-populated)</li>
+                    <li>Set weather conditions and market lines</li>
+                    <li>Click "Analyze Matchup" for recommendations</li>
+                </ol>
+            </div>
+        </div>
+
         <div id="error"></div>
-        <div class="stats-info">* Statistics are automatically calculated from the last 7 games</div>
+        
+        <div class="stats-info">
+            <i class="fas fa-info-circle me-2"></i>
+            Statistics are automatically calculated from the last 7 games and updated in real-time
+        </div>
+
         <div id="loading" class="loading">
-            <div class="loading-spinner"></div>
-            <p class="mt-2">Fetching latest team statistics...</p>
+            <div class="loading-spinner mb-3"></div>
+            <p class="mb-0">Fetching latest team statistics and analyzing matchup data...</p>
         </div>
+
         <div class="row">
+            <!-- Home Team Section -->
             <div class="col-md-6">
-                <h3>Home Team</h3>
-                <div class="form-group">
-                    <label for="homeTeamSelect">Select Team</label>
-                    <select class="form-control" id="homeTeamSelect"></select>
-                </div>
-                <div class="form-group">
-                    <label for="homePitcherSelect">Starting Pitcher</label>
-                    <select class="form-control" id="homePitcherSelect">
-                        <option value="">Select pitcher...</option>
-                    </select>
-                </div>
-                <div class="pitcher-stats" id="homePitcherStats">
-                    <h5 class="mt-3">Pitcher Stats (Last 3 Starts)</h5>
+                <div class="team-input">
+                    <h3 class="mb-4">Home Team</h3>
                     <div class="form-group">
-                        <label for="homeStarterERA">ERA</label>
-                        <input type="number" class="form-control" id="homeStarterERA" step="0.01" readonly>
+                        <label class="form-label" for="homeTeamSelect">Select Team</label>
+                        <select class="form-control form-select" id="homeTeamSelect"></select>
                     </div>
-                    <div class="form-group">
-                        <label for="homeStarterWHIP">WHIP</label>
-                        <input type="number" class="form-control" id="homeStarterWHIP" step="0.01" readonly>
+                    
+                    <div class="form-group mt-4">
+                        <label class="form-label" for="homePitcherSelect">
+                            Starting Pitcher
+                            <i class="fas fa-info-circle tooltip-icon" data-bs-toggle="tooltip" title="Select the starting pitcher to include their recent performance in the analysis"></i>
+                        </label>
+                        <select class="form-control form-select" id="homePitcherSelect">
+                            <option value="">Select pitcher...</option>
+                        </select>
                     </div>
-                    <div class="form-group">
-                        <label for="homeStarterK9">K/9</label>
-                        <input type="number" class="form-control" id="homeStarterK9" step="0.1" readonly>
-                    </div>
-                    <div class="form-group">
-                        <label for="homeStarterBB9">BB/9</label>
-                        <input type="number" class="form-control" id="homeStarterBB9" step="0.1" readonly>
-                    </div>
-                </div>
-                <h5 class="mt-3">Team Stats (Last 7 Games)</h5>
-                <div class="form-group">
-                    <label for="homeAVG">AVG</label>
-                    <input type="number" class="form-control" id="homeAVG" step="0.001">
-                </div>
-                <div class="form-group">
-                    <label for="homeOBP">OBP</label>
-                    <input type="number" class="form-control" id="homeOBP" step="0.001">
-                </div>
-                <div class="form-group">
-                    <label for="homeSLG">SLG</label>
-                    <input type="number" class="form-control" id="homeSLG" step="0.001">
-                </div>
-                <div class="form-group">
-                    <label for="homeERA">ERA</label>
-                    <input type="number" class="form-control" id="homeERA" step="0.01">
-                </div>
-                <div class="form-group">
-                    <label for="homeWHIP">WHIP</label>
-                    <input type="number" class="form-control" id="homeWHIP" step="0.01">
-                </div>
-                <div class="form-group">
-                    <label for="homeBABIP">BABIP</label>
-                    <input type="number" class="form-control" id="homeBABIP" step="0.001">
-                </div>
-                <div class="form-group">
-                    <label for="homeISO">ISO</label>
-                    <input type="number" class="form-control" id="homeISO" step="0.001">
-                </div>
-            </div>
-            <div class="col-md-6">
-                <h3>Away Team</h3>
-                <div class="form-group">
-                    <label for="awayTeamSelect">Select Team</label>
-                    <select class="form-control" id="awayTeamSelect"></select>
-                </div>
-                <div class="form-group">
-                    <label for="awayPitcherSelect">Starting Pitcher</label>
-                    <select class="form-control" id="awayPitcherSelect">
-                        <option value="">Select pitcher...</option>
-                    </select>
-                </div>
-                <div class="pitcher-stats" id="awayPitcherStats">
-                    <h5 class="mt-3">Pitcher Stats (Last 3 Starts)</h5>
-                    <div class="form-group">
-                        <label for="awayStarterERA">ERA</label>
-                        <input type="number" class="form-control" id="awayStarterERA" step="0.01" readonly>
-                    </div>
-                    <div class="form-group">
-                        <label for="awayStarterWHIP">WHIP</label>
-                        <input type="number" class="form-control" id="awayStarterWHIP" step="0.01" readonly>
-                    </div>
-                    <div class="form-group">
-                        <label for="awayStarterK9">K/9</label>
-                        <input type="number" class="form-control" id="awayStarterK9" step="0.1" readonly>
-                    </div>
-                    <div class="form-group">
-                        <label for="awayStarterBB9">BB/9</label>
-                        <input type="number" class="form-control" id="awayStarterBB9" step="0.1" readonly>
-                    </div>
-                </div>
-                <h5 class="mt-3">Team Stats (Last 7 Games)</h5>
-                <div class="form-group">
-                    <label for="awayAVG">AVG</label>
-                    <input type="number" class="form-control" id="awayAVG" step="0.001">
-                </div>
-                <div class="form-group">
-                    <label for="awayOBP">OBP</label>
-                    <input type="number" class="form-control" id="awayOBP" step="0.001">
-                </div>
-                <div class="form-group">
-                    <label for="awaySLG">SLG</label>
-                    <input type="number" class="form-control" id="awaySLG" step="0.001">
-                </div>
-                <div class="form-group">
-                    <label for="awayERA">ERA</label>
-                    <input type="number" class="form-control" id="awayERA" step="0.01">
-                </div>
-                <div class="form-group">
-                    <label for="awayWHIP">WHIP</label>
-                    <input type="number" class="form-control" id="awayWHIP" step="0.01">
-                </div>
-                <div class="form-group">
-                    <label for="awayBABIP">BABIP</label>
-                    <input type="number" class="form-control" id="awayBABIP" step="0.001">
-                </div>
-                <div class="form-group">
-                    <label for="awayISO">ISO</label>
-                    <input type="number" class="form-control" id="awayISO" step="0.001">
-                </div>
-            </div>
-        </div>
-        <div class="row mt-4">
-            <div class="col-md-4">
-                <div class="form-group">
-                    <label for="weather">Weather Conditions</label>
-                    <select class="form-control" id="weather">
-                        <option value="normal">Normal Conditions</option>
-                        <option value="wind_out">Wind Blowing Out</option>
-                        <option value="wind_in">Wind Blowing In</option>
-                        <option value="rain">Rain</option>
-                        <option value="hot">Hot (85°F+)</option>
-                        <option value="cold">Cold (Below 45°F)</option>
-                        <option value="dome">Dome/Retractable Roof</option>
-                    </select>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="form-group">
-                    <label for="marketSpread">Market Spread</label>
-                    <input type="number" class="form-control" id="marketSpread" step="0.5">
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="form-group">
-                    <label for="marketTotal">Market Total</label>
-                    <input type="number" class="form-control" id="marketTotal" step="0.5">
-                </div>
-            </div>
-        </div>
-        <div class="row mt-4">
-            <div class="col-12">
-                <button class="btn btn-primary" onclick="analyzeMatchup()">Analyze Matchup</button>
-            </div>
-        </div>
-        <div class="row mt-4">
-            <div class="col-12">
-                <h3>Results</h3>
-                <div id="results"></div>
-                <div class="text-muted mt-2">
-                    Last updated: <span id="lastUpdate">Never</span>
-                </div>
-            </div>
-        </div>
 
-        <!-- New Update History Section -->
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0">Update History</h5>
+                    <div class="stat-card mt-4">
+                        <h5 class="mb-3">Pitcher Stats <small class="text-muted">(Last 3 Starts)</small></h5>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="mb-3">
+                                    <label class="stat-label" for="homeStarterERA">ERA</label>
+                                    <input type="number" class="form-control" id="homeStarterERA" step="0.01" readonly>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="stat-label" for="homeStarterWHIP">WHIP</label>
+                                    <input type="number" class="form-control" id="homeStarterWHIP" step="0.01" readonly>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="mb-3">
+                                    <label class="stat-label" for="homeStarterK9">K/9</label>
+                                    <input type="number" class="form-control" id="homeStarterK9" step="0.1" readonly>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="stat-label" for="homeStarterBB9">BB/9</label>
+                                    <input type="number" class="form-control" id="homeStarterBB9" step="0.1" readonly>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <div id="updateHistory" class="list-group">
-                            <!-- Update history will be populated here -->
+
+                    <div class="stat-card">
+                        <h5 class="mb-3">Team Stats <small class="text-muted">(Last 7 Games)</small></h5>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="mb-3">
+                                    <label class="stat-label" for="homeAVG">
+                                        Batting Average
+                                        <i class="fas fa-info-circle tooltip-icon" data-bs-toggle="tooltip" title="Team's batting average over the last 7 games"></i>
+                                    </label>
+                                    <input type="number" class="form-control" id="homeAVG" step="0.001" readonly>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="stat-label" for="homeOBP">
+                                        On-Base %
+                                        <i class="fas fa-info-circle tooltip-icon" data-bs-toggle="tooltip" title="Percentage of plate appearances resulting in the batter reaching base"></i>
+                                    </label>
+                                    <input type="number" class="form-control" id="homeOBP" step="0.001" readonly>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="stat-label" for="homeSLG">
+                                        Slugging %
+                                        <i class="fas fa-info-circle tooltip-icon" data-bs-toggle="tooltip" title="Total bases divided by at bats"></i>
+                                    </label>
+                                    <input type="number" class="form-control" id="homeSLG" step="0.001" readonly>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="mb-3">
+                                    <label class="stat-label" for="homeISO">
+                                        Isolated Power
+                                        <i class="fas fa-info-circle tooltip-icon" data-bs-toggle="tooltip" title="Slugging percentage minus batting average"></i>
+                                    </label>
+                                    <input type="number" class="form-control" id="homeISO" step="0.001" readonly>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="stat-label" for="homeBABIP">
+                                        BABIP
+                                        <i class="fas fa-info-circle tooltip-icon" data-bs-toggle="tooltip" title="Batting average on balls in play"></i>
+                                    </label>
+                                    <input type="number" class="form-control" id="homeBABIP" step="0.001" readonly>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="stat-label" for="homeERA">Team ERA</label>
+                                    <input type="number" class="form-control" id="homeERA" step="0.01" readonly>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Away Team Section (mirror of Home Team) -->
+            <div class="col-md-6">
+                <div class="team-input">
+                    <h3 class="mb-4">Away Team</h3>
+                    <!-- Mirror the home team structure -->
+                    <div class="form-group">
+                        <label class="form-label" for="awayTeamSelect">Select Team</label>
+                        <select class="form-control form-select" id="awayTeamSelect"></select>
+                    </div>
+                    
+                    <div class="form-group mt-4">
+                        <label class="form-label" for="awayPitcherSelect">
+                            Starting Pitcher
+                            <i class="fas fa-info-circle tooltip-icon" data-bs-toggle="tooltip" title="Select the starting pitcher to include their recent performance in the analysis"></i>
+                        </label>
+                        <select class="form-control form-select" id="awayPitcherSelect">
+                            <option value="">Select pitcher...</option>
+                        </select>
+                    </div>
+
+                    <div class="stat-card mt-4">
+                        <h5 class="mb-3">Pitcher Stats <small class="text-muted">(Last 3 Starts)</small></h5>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="mb-3">
+                                    <label class="stat-label" for="awayStarterERA">ERA</label>
+                                    <input type="number" class="form-control" id="awayStarterERA" step="0.01" readonly>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="stat-label" for="awayStarterWHIP">WHIP</label>
+                                    <input type="number" class="form-control" id="awayStarterWHIP" step="0.01" readonly>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="mb-3">
+                                    <label class="stat-label" for="awayStarterK9">K/9</label>
+                                    <input type="number" class="form-control" id="awayStarterK9" step="0.1" readonly>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="stat-label" for="awayStarterBB9">BB/9</label>
+                                    <input type="number" class="form-control" id="awayStarterBB9" step="0.1" readonly>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <h5 class="mb-3">Team Stats <small class="text-muted">(Last 7 Games)</small></h5>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="mb-3">
+                                    <label class="stat-label" for="awayAVG">
+                                        Batting Average
+                                        <i class="fas fa-info-circle tooltip-icon" data-bs-toggle="tooltip" title="Team's batting average over the last 7 games"></i>
+                                    </label>
+                                    <input type="number" class="form-control" id="awayAVG" step="0.001" readonly>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="stat-label" for="awayOBP">
+                                        On-Base %
+                                        <i class="fas fa-info-circle tooltip-icon" data-bs-toggle="tooltip" title="Percentage of plate appearances resulting in the batter reaching base"></i>
+                                    </label>
+                                    <input type="number" class="form-control" id="awayOBP" step="0.001" readonly>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="stat-label" for="awaySLG">
+                                        Slugging %
+                                        <i class="fas fa-info-circle tooltip-icon" data-bs-toggle="tooltip" title="Total bases divided by at bats"></i>
+                                    </label>
+                                    <input type="number" class="form-control" id="awaySLG" step="0.001" readonly>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="mb-3">
+                                    <label class="stat-label" for="awayISO">
+                                        Isolated Power
+                                        <i class="fas fa-info-circle tooltip-icon" data-bs-toggle="tooltip" title="Slugging percentage minus batting average"></i>
+                                    </label>
+                                    <input type="number" class="form-control" id="awayISO" step="0.001" readonly>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="stat-label" for="awayBABIP">
+                                        BABIP
+                                        <i class="fas fa-info-circle tooltip-icon" data-bs-toggle="tooltip" title="Batting average on balls in play"></i>
+                                    </label>
+                                    <input type="number" class="form-control" id="awayBABIP" step="0.001" readonly>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="stat-label" for="awayERA">Team ERA</label>
+                                    <input type="number" class="form-control" id="awayERA" step="0.01" readonly>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- New Stats Changes Section -->
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">Statistical Changes</h5>
-                    </div>
-                    <div class="card-body">
-                        <div id="statsChanges" class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>Metric</th>
-                                        <th>Previous</th>
-                                        <th>Current</th>
-                                        <th>Change</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="statsChangesBody">
-                                    <!-- Stats changes will be populated here -->
-                                </tbody>
-                            </table>
-                        </div>
+        <!-- Game Conditions Section -->
+        <div class="analysis-section">
+            <h3 class="mb-4">Game Conditions</h3>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label" for="weather">
+                            Weather Conditions
+                            <i class="fas fa-info-circle tooltip-icon" data-bs-toggle="tooltip" title="Weather conditions affect run scoring probability"></i>
+                        </label>
+                        <select class="form-control form-select" id="weather">
+                            <option value="normal">Normal Conditions</option>
+                            <option value="wind_out">Wind Blowing Out (↑ runs)</option>
+                            <option value="wind_in">Wind Blowing In (↓ runs)</option>
+                            <option value="rain">Rain (↓ runs)</option>
+                            <option value="hot">Hot: 85°F+ (↑ runs)</option>
+                            <option value="cold">Cold: Below 45°F (↓ runs)</option>
+                            <option value="dome">Dome/Retractable Roof</option>
+                        </select>
                     </div>
                 </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label" for="marketSpread">
+                            Market Spread
+                            <i class="fas fa-info-circle tooltip-icon" data-bs-toggle="tooltip" title="Current betting spread (negative means home team is favored)"></i>
+                        </label>
+                        <input type="number" class="form-control" id="marketSpread" step="0.5" placeholder="e.g. -1.5">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label class="form-label" for="marketTotal">
+                            Market Total
+                            <i class="fas fa-info-circle tooltip-icon" data-bs-toggle="tooltip" title="Current over/under total for the game"></i>
+                        </label>
+                        <input type="number" class="form-control" id="marketTotal" step="0.5" placeholder="e.g. 8.5">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analysis Button -->
+        <div class="text-center my-4">
+            <button class="btn btn-primary btn-lg" onclick="analyzeMatchup()">
+                <i class="fas fa-calculator me-2"></i>Analyze Matchup
+            </button>
+        </div>
+
+        <!-- Results Section -->
+        <div class="analysis-section">
+            <h3 class="mb-4">Analysis Results</h3>
+            <div id="results"></div>
+            <div class="text-muted mt-3">
+                <small>Last updated: <span id="lastUpdate">Never</span></small>
+            </div>
+        </div>
+
+        <!-- Update History -->
+        <div class="analysis-section">
+            <h3 class="mb-4">Update History</h3>
+            <div id="updateHistory" class="update-history"></div>
+        </div>
+
+        <!-- Statistical Changes -->
+        <div class="analysis-section">
+            <h3 class="mb-4">Statistical Changes</h3>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Metric</th>
+                            <th>Previous</th>
+                            <th>Current</th>
+                            <th>Change</th>
+                        </tr>
+                    </thead>
+                    <tbody id="statsChangesBody"></tbody>
+                </table>
             </div>
         </div>
     </div>
+
+    <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Font Awesome -->
+    <script src="https://kit.fontawesome.com/your-font-awesome-kit.js" crossorigin="anonymous"></script>
+    <!-- Custom JS -->
     <script src="analyzer.js"></script>
     <script>
-        // Initialize the analyzer and populate team dropdowns when the page loads
+        // Initialize tooltips
         document.addEventListener('DOMContentLoaded', () => {
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+
+            // Initialize the analyzer
             window.analyzer = new MLBAnalyzer();
             window.analyzer.updateTeamStats();
         });
