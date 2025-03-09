@@ -481,32 +481,37 @@ class MLBAnalyzer {
     }
 
     calculateRunExpectancy(stats, weather = 'normal') {
-        // Get weather adjustment factors
-        const weatherFactor = this.WEATHER_FACTORS[weather] || this.WEATHER_FACTORS.normal;
-        
-        // Get starter stats
-        const starterERA = parseFloat(document.getElementById(`${stats.side}StarterERA`).value) || stats.era;
-        const starterWHIP = parseFloat(document.getElementById(`${stats.side}StarterWHIP`).value) || stats.whip;
-        const starterK9 = parseFloat(document.getElementById(`${stats.side}StarterK9`).value) || 0;
-        
-        // Base run expectancy calculation with starter impact
-        const baseExpectedRuns = (
-            stats.ops * 4.0 + // OPS factor (reduced weight)
-            (1 - starterWHIP) * 2.5 + // Starting pitcher WHIP factor (increased weight)
-            (stats.babip || 0) * 1.5 + // Batting average on balls in play
-            (stats.iso || 0) * 2.0 + // Isolated power
-            ((starterERA - 4.5) * 0.2) + // ERA impact
-            ((starterK9 - 8.5) * -0.1) // Strikeout impact (negative means better)
-        );
+        try {
+            // Get weather adjustment factors
+            const weatherFactor = this.WEATHER_FACTORS[weather] || this.WEATHER_FACTORS.normal;
+            
+            // Get starter stats
+            const starterERA = parseFloat(document.getElementById(`${stats.side}StarterERA`)?.value) || stats.era || 4.50;
+            const starterWHIP = parseFloat(document.getElementById(`${stats.side}StarterWHIP`)?.value) || stats.whip || 1.30;
+            const starterK9 = parseFloat(document.getElementById(`${stats.side}StarterK9`)?.value) || 8.5;
+            
+            // Base run expectancy calculation with starter impact
+            const baseExpectedRuns = (
+                (stats.ops || 0) * 4.0 + // OPS factor (reduced weight)
+                (1 - starterWHIP) * 2.5 + // Starting pitcher WHIP factor (increased weight)
+                (stats.babip || 0) * 1.5 + // Batting average on balls in play
+                (stats.iso || 0) * 2.0 + // Isolated power
+                ((starterERA - 4.5) * 0.2) + // ERA impact
+                ((starterK9 - 8.5) * -0.1) // Strikeout impact (negative means better)
+            );
 
-        // Apply weather adjustments
-        const weatherAdjustedRuns = baseExpectedRuns * weatherFactor.runs;
-        
-        // Additional HR factor adjustment for extreme weather
-        const hrAdjustment = (stats.iso || 0) * (weatherFactor.hr - 1) * 0.5;
-        
-        // Return weather-adjusted run expectancy, bounded between 2 and 8 runs
-        return Math.max(2, Math.min(8, weatherAdjustedRuns + hrAdjustment));
+            // Apply weather adjustments
+            const weatherAdjustedRuns = baseExpectedRuns * weatherFactor.runs;
+            
+            // Additional HR factor adjustment for extreme weather
+            const hrAdjustment = (stats.iso || 0) * (weatherFactor.hr - 1) * 0.5;
+            
+            // Return weather-adjusted run expectancy, bounded between 2 and 8 runs
+            return Math.max(2, Math.min(8, weatherAdjustedRuns + hrAdjustment));
+        } catch (error) {
+            console.error('Error calculating run expectancy:', error);
+            return 4.5; // Return league average if calculation fails
+        }
     }
 
     async analyzeMatchup() {
@@ -589,10 +594,25 @@ class MLBAnalyzer {
 
     findValue(homeTeam, awayTeam, marketSpread, marketTotal, weather = 'normal') {
         try {
-            const projections = this.analyzeMatchup(homeTeam, awayTeam, weather);
-            
-            const spreadValue = parseFloat(projections.projectedSpread) - (marketSpread || 0);
-            const totalValue = parseFloat(projections.projectedTotal) - (marketTotal || 0);
+            // Calculate run expectancy for both teams
+            const homeOPS = parseFloat(homeTeam.obp) + parseFloat(homeTeam.slg);
+            const awayOPS = parseFloat(awayTeam.obp) + parseFloat(awayTeam.slg);
+
+            const homeExpectedRuns = this.calculateRunExpectancy({
+                ...homeTeam,
+                ops: homeOPS
+            }, weather);
+
+            const awayExpectedRuns = this.calculateRunExpectancy({
+                ...awayTeam,
+                ops: awayOPS
+            }, weather);
+
+            const projectedSpread = homeExpectedRuns - awayExpectedRuns;
+            const projectedTotal = homeExpectedRuns + awayExpectedRuns;
+
+            const spreadValue = projectedSpread - (marketSpread || 0);
+            const totalValue = projectedTotal - (marketTotal || 0);
 
             const recommendations = [];
 
@@ -620,15 +640,32 @@ class MLBAnalyzer {
                 }
             }
 
+            // Add statistical insights
+            if (homeOPS > awayOPS + 0.050) {
+                recommendations.push(`${homeTeam.name} has significant offensive advantage (OPS +${(homeOPS - awayOPS).toFixed(3)})`);
+            } else if (awayOPS > homeOPS + 0.050) {
+                recommendations.push(`${awayTeam.name} has significant offensive advantage (OPS +${(awayOPS - homeOPS).toFixed(3)})`);
+            }
+
+            // Pitching analysis
+            const homePitchingAdvantage = parseFloat(awayTeam.era) - parseFloat(homeTeam.era);
+            const awayPitchingAdvantage = parseFloat(homeTeam.era) - parseFloat(awayTeam.era);
+
+            if (homePitchingAdvantage > 1.0) {
+                recommendations.push(`${homeTeam.name} has pitching advantage (ERA -${homePitchingAdvantage.toFixed(2)})`);
+            } else if (awayPitchingAdvantage > 1.0) {
+                recommendations.push(`${awayTeam.name} has pitching advantage (ERA -${awayPitchingAdvantage.toFixed(2)})`);
+            }
+
             return {
                 projections: {
-                    homeProjected: Number(projections.homeProjected || 0).toFixed(2),
-                    awayProjected: Number(projections.awayProjected || 0).toFixed(2),
-                    projectedSpread: Number(projections.projectedSpread || 0).toFixed(2),
-                    projectedTotal: Number(projections.projectedTotal || 0).toFixed(2)
+                    homeProjected: homeExpectedRuns.toFixed(2),
+                    awayProjected: awayExpectedRuns.toFixed(2),
+                    projectedSpread: projectedSpread.toFixed(2),
+                    projectedTotal: projectedTotal.toFixed(2)
                 },
-                spreadValue: Number(spreadValue || 0).toFixed(2),
-                totalValue: Number(totalValue || 0).toFixed(2),
+                spreadValue: spreadValue.toFixed(2),
+                totalValue: totalValue.toFixed(2),
                 recommendations: recommendations
             };
         } catch (error) {
@@ -840,7 +877,18 @@ class MLBAnalyzer {
 
     // Add new method to display updates
     displayUpdates() {
+        if (typeof window === 'undefined') {
+            // In test environment, just log the updates
+            console.log('Update history:', this.updateHistory);
+            return;
+        }
+
         const updateHistoryDiv = document.getElementById('updateHistory');
+        if (!updateHistoryDiv) {
+            console.warn('Update history element not found');
+            return;
+        }
+
         updateHistoryDiv.innerHTML = this.updateHistory
             .slice(0, 10) // Show last 10 updates
             .map(update => `
@@ -857,7 +905,17 @@ class MLBAnalyzer {
 
     // Add new method to display stat changes
     displayStatChanges(changes) {
+        if (typeof window === 'undefined') {
+            // In test environment, just log the changes
+            console.log('Stat changes:', changes);
+            return;
+        }
+
         const statsChangesBody = document.getElementById('statsChangesBody');
+        if (!statsChangesBody) {
+            console.warn('Stats changes body element not found');
+            return;
+        }
         
         // Add new changes at the top
         changes.forEach(change => {
@@ -998,36 +1056,76 @@ function updateUIWithResults(results) {
         resultsDiv.innerHTML = `
             <div class="card">
                 <div class="card-body">
-                    <h5>Projected Scores</h5>
-                    <div class="row mb-3">
-                        <div class="col-6">
-                            <p class="mb-1">Home Team:</p>
-                            <h4>${Number(results.projections.homeProjected || 0).toFixed(2)}</h4>
-                        </div>
-                        <div class="col-6">
-                            <p class="mb-1">Away Team:</p>
-                            <h4>${Number(results.projections.awayProjected || 0).toFixed(2)}</h4>
-                        </div>
-                    </div>
-
-                    <h5>Value Analysis</h5>
-                    <div class="row mb-3">
-                        <div class="col-6">
-                            <p class="mb-1">Spread Value:</p>
-                            <h4>${Number(results.spreadValue || 0).toFixed(2)}</h4>
-                        </div>
-                        <div class="col-6">
-                            <p class="mb-1">Total Value:</p>
-                            <h4>${Number(results.totalValue || 0).toFixed(2)}</h4>
+                    <h5 class="card-title mb-4">Analysis Results</h5>
+                    
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6>Projected Scores</h6>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="text-center">
+                                    <p class="mb-1">Home Team</p>
+                                    <h3 class="mb-0">${Number(results.projections.homeProjected || 0).toFixed(2)}</h3>
+                                </div>
+                                <div class="text-center">
+                                    <h4 class="mb-0">vs</h4>
+                                </div>
+                                <div class="text-center">
+                                    <p class="mb-1">Away Team</p>
+                                    <h3 class="mb-0">${Number(results.projections.awayProjected || 0).toFixed(2)}</h3>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <h5>Recommendations</h5>
-                    <ul class="list-group">
-                        ${(results.recommendations || ['No recommendations available']).map(rec => `
-                            <li class="list-group-item">${rec}</li>
-                        `).join('')}
-                    </ul>
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6>Betting Analysis</h6>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Metric</th>
+                                            <th>Projected</th>
+                                            <th>Market</th>
+                                            <th>Value</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Spread</td>
+                                            <td>${results.projections.projectedSpread}</td>
+                                            <td>${document.getElementById('marketSpread')?.value || 'N/A'}</td>
+                                            <td class="${parseFloat(results.spreadValue) > 0 ? 'text-success' : 'text-danger'}">
+                                                ${results.spreadValue > 0 ? '+' : ''}${results.spreadValue}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Total</td>
+                                            <td>${results.projections.projectedTotal}</td>
+                                            <td>${document.getElementById('marketTotal')?.value || 'N/A'}</td>
+                                            <td class="${parseFloat(results.totalValue) > 0 ? 'text-success' : 'text-danger'}">
+                                                ${results.totalValue > 0 ? '+' : ''}${results.totalValue}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <h6>Recommendations</h6>
+                            <ul class="list-group">
+                                ${(results.recommendations || ['No recommendations available']).map(rec => `
+                                    <li class="list-group-item">
+                                        <i class="fas fa-check-circle text-success me-2"></i>
+                                        ${rec}
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
@@ -1038,6 +1136,7 @@ function updateUIWithResults(results) {
             <div class="card">
                 <div class="card-body">
                     <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
                         Unable to display results. Please check your input data and try again.
                     </div>
                 </div>
@@ -1055,8 +1154,16 @@ function showError(message) {
     }, 5000);
 }
 
-// Initialize the analyzer when page loads
-document.addEventListener('DOMContentLoaded', () => {
-    const analyzer = new MLBAnalyzer();
-    analyzer.updateTeamStats();
-}); 
+// Replace the bottom of the file with:
+if (typeof window !== 'undefined') {
+    // Browser environment
+    document.addEventListener('DOMContentLoaded', () => {
+        const analyzer = new MLBAnalyzer();
+        analyzer.updateTeamStats();
+    });
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+    // Node.js environment
+    module.exports = { MLBAnalyzer };
+} 

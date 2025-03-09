@@ -1,0 +1,23 @@
+{
+  "name": "test",
+  "version": "1.0.0",
+  "description": "A sophisticated web-based tool for analyzing MLB matchups and identifying betting value. The analyzer combines real-time team statistics, starting pitcher performance, weather conditions, and advanced analytics to provide data-driven betting recommendations.",
+  "main": "analyzer.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/atravelingman/mlb-betting-analyzer.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/atravelingman/mlb-betting-analyzer/issues"
+  },
+  "homepage": "https://github.com/atravelingman/mlb-betting-analyzer#readme",
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  }
+}
