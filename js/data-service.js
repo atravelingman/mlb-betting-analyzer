@@ -62,6 +62,16 @@ class DataService {
         return this.processBallparkData(data);
     }
 
+    async loadRoster(teamId) {
+        try {
+            const data = await this.fetchData(API_CONFIG.ENDPOINTS.ROSTER.replace('{teamId}', teamId));
+            return data.roster.filter(player => player.position.code === '1'); // Pitchers only
+        } catch (error) {
+            console.error('Error loading roster:', error);
+            return [];
+        }
+    }
+
     // Helper methods
     async checkRateLimit() {
         const now = Date.now();
@@ -90,9 +100,13 @@ class DataService {
         const timeoutId = setTimeout(() => controller.abort(), 10000);
 
         try {
-            const response = await fetch(url, {
+            // Use proxy URL for all requests to avoid CORS issues
+            const proxyUrl = API_CONFIG.PROXY_URL + encodeURIComponent(url);
+            
+            const response = await fetch(proxyUrl, {
                 headers: API_CONFIG.HEADERS,
-                signal: controller.signal
+                signal: controller.signal,
+                mode: 'cors'
             });
 
             if (!response.ok) {
@@ -100,6 +114,11 @@ class DataService {
             }
 
             return response;
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                throw new Error(API_ERRORS.TIMEOUT);
+            }
+            throw error;
         } finally {
             clearTimeout(timeoutId);
         }

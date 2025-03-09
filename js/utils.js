@@ -1,34 +1,27 @@
-class Utils {
+export class Utils {
     /**
      * Format a number to a specific number of decimal places
      * @param {number} value - The number to format
      * @param {number} decimals - Number of decimal places
      * @returns {string} - Formatted number
      */
-    static formatNumber(value, decimals = 3) {
-        if (isNaN(value)) return '0.000';
+    static formatNumber(value, decimals = 2) {
+        if (!value || isNaN(value)) return '0.00';
         return Number(value).toFixed(decimals);
     }
 
     /**
      * Format a date string to a specific format
      * @param {string} dateString - The date string to format
-     * @param {string} format - The desired format (e.g., 'MM/DD/YYYY')
      * @returns {string} - Formatted date string
      */
-    static formatDate(dateString, format = config.ui.dateFormat) {
-        try {
-            const date = new Date(dateString);
-            const options = {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit'
-            };
-            return date.toLocaleDateString(undefined, options);
-        } catch (error) {
-            console.error('Error formatting date:', error);
-            return 'Invalid Date';
-        }
+    static formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        });
     }
 
     /**

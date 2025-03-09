@@ -1,8 +1,10 @@
 import { dataService } from './data-service.js';
 import { Utils } from './utils.js';
+import { API_CONFIG } from './api-config.js';
 
-class MLBAnalyzer {
+export class MLBAnalyzer {
     constructor() {
+        console.log('Initializing MLB Analyzer...');
         this.initializeElements();
         this.initializeEventListeners();
         this.loadTeams();
@@ -37,6 +39,11 @@ class MLBAnalyzer {
         try {
             this.showLoading();
             const teams = await dataService.getTeams();
+            
+            if (!teams || teams.length === 0) {
+                throw new Error('No teams data available');
+            }
+
             teams.sort((a, b) => a.name.localeCompare(b.name));
             
             const options = teams.map(team => 
@@ -45,7 +52,10 @@ class MLBAnalyzer {
 
             this.elements.homeTeamSelect.innerHTML = '<option value="">Select Team...</option>' + options;
             this.elements.awayTeamSelect.innerHTML = '<option value="">Select Team...</option>' + options;
+            
+            console.log('Teams loaded successfully:', teams.length, 'teams');
         } catch (error) {
+            console.error('Error loading teams:', error);
             this.showError('Error loading teams: ' + error.message);
         } finally {
             this.hideLoading();
@@ -101,9 +111,17 @@ class MLBAnalyzer {
     }
 
     async loadRoster(teamId) {
-        const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ROSTER.replace('{teamId}', teamId)}`);
-        const data = await response.json();
-        return data.roster.filter(player => player.position.code === '1'); // Pitchers only
+        try {
+            const roster = await dataService.loadRoster(teamId);
+            if (!roster || roster.length === 0) {
+                throw new Error('No roster data available');
+            }
+            return roster;
+        } catch (error) {
+            console.error('Error loading roster:', error);
+            this.showError('Error loading roster: ' + error.message);
+            return [];
+        }
     }
 
     updateTeamStats(side, stats) {
@@ -414,9 +432,4 @@ class MLBAnalyzer {
 
         this.elements.results.innerHTML = resultsHtml;
     }
-}
-
-// Initialize the analyzer when the DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    window.analyzer = new MLBAnalyzer();
-}); 
+} 

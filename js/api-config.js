@@ -1,6 +1,6 @@
 const API_CONFIG = {
     BASE_URL: 'https://statsapi.mlb.com/api/v1',
-    PROXY_URL: 'https://cors-anywhere.herokuapp.com/',
+    PROXY_URL: 'https://api.allorigins.win/raw?url=',
     ENDPOINTS: {
         TEAMS: '/teams?sportId=1',
         TEAM_STATS: '/teams/{teamId}/stats?stats=season,statSplits&group=hitting,pitching',
@@ -16,7 +16,8 @@ const API_CONFIG = {
     RETRY_DELAY: 1000, // 1 second
     HEADERS: {
         'User-Agent': 'Addy N Friends MLB Analyzer/1.0',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'Origin': window.location.origin
     }
 };
 
