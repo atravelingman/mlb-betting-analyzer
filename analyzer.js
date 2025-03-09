@@ -63,10 +63,10 @@ class MLBAnalyzer {
             const loadingDiv = document.getElementById('loading');
             loadingDiv.style.display = 'block';
 
-            this.addUpdate('Fetching Stats', `Getting latest statistics for ${teamId}`);
+            this.addUpdate('Fetching Stats', `Getting latest statistics for team ${teamId}`);
             
-            // Get team stats
-            const teamStatsUrl = `${this.API_BASE_URL}/teams/${teamId}/stats?stats=season&group=hitting,pitching&season=2024&sportIds=1`;
+            // Get team stats - using teamId parameter directly
+            const teamStatsUrl = `${this.API_BASE_URL}/teams/${teamId}/stats?stats=season&group=hitting,pitching&season=2024`;
             console.log('Fetching team stats:', teamStatsUrl);
             const statsResponse = await fetch(teamStatsUrl);
             
@@ -116,7 +116,7 @@ class MLBAnalyzer {
             const pitcherStats = await Promise.all(
                 pitchers.map(async pitcher => {
                     try {
-                        const pitcherStatsUrl = `${this.API_BASE_URL}/people/${pitcher.id}/stats?stats=season&group=pitching&season=2024&sportIds=1`;
+                        const pitcherStatsUrl = `${this.API_BASE_URL}/people/${pitcher.id}/stats?stats=season&group=pitching&season=2024`;
                         console.log('Fetching pitcher stats:', pitcherStatsUrl);
                         const statsResponse = await fetch(pitcherStatsUrl);
                         
@@ -152,7 +152,7 @@ class MLBAnalyzer {
 
             // Add tracking for the new stats
             this.trackStatChanges({ id: teamId, side: teamId }, stats);
-            this.addUpdate('Stats Updated', `Updated ${teamId} team statistics`);
+            this.addUpdate('Stats Updated', `Updated team ${teamId} statistics`);
 
             loadingDiv.style.display = 'none';
 
@@ -300,36 +300,36 @@ class MLBAnalyzer {
         const awayTeamSelect = document.getElementById('awayTeamSelect');
         
         const mlbTeams = [
-            { id: 109, name: "Arizona Diamondbacks" },
-            { id: 144, name: "Atlanta Braves" },
-            { id: 110, name: "Baltimore Orioles" },
-            { id: 111, name: "Boston Red Sox" },
-            { id: 112, name: "Chicago Cubs" },
-            { id: 145, name: "Chicago White Sox" },
-            { id: 113, name: "Cincinnati Reds" },
-            { id: 114, name: "Cleveland Guardians" },
-            { id: 115, name: "Colorado Rockies" },
-            { id: 116, name: "Detroit Tigers" },
-            { id: 117, name: "Houston Astros" },
-            { id: 118, name: "Kansas City Royals" },
-            { id: 108, name: "Los Angeles Angels" },
-            { id: 119, name: "Los Angeles Dodgers" },
-            { id: 146, name: "Miami Marlins" },
-            { id: 158, name: "Milwaukee Brewers" },
-            { id: 142, name: "Minnesota Twins" },
-            { id: 121, name: "New York Mets" },
-            { id: 147, name: "New York Yankees" },
-            { id: 133, name: "Oakland Athletics" },
-            { id: 143, name: "Philadelphia Phillies" },
-            { id: 134, name: "Pittsburgh Pirates" },
-            { id: 135, name: "San Diego Padres" },
-            { id: 137, name: "San Francisco Giants" },
-            { id: 136, name: "Seattle Mariners" },
-            { id: 138, name: "St. Louis Cardinals" },
-            { id: 139, name: "Tampa Bay Rays" },
-            { id: 140, name: "Texas Rangers" },
-            { id: 141, name: "Toronto Blue Jays" },
-            { id: 120, name: "Washington Nationals" }
+            { id: "109", name: "Arizona Diamondbacks" },
+            { id: "144", name: "Atlanta Braves" },
+            { id: "110", name: "Baltimore Orioles" },
+            { id: "111", name: "Boston Red Sox" },
+            { id: "112", name: "Chicago Cubs" },
+            { id: "145", name: "Chicago White Sox" },
+            { id: "113", name: "Cincinnati Reds" },
+            { id: "114", name: "Cleveland Guardians" },
+            { id: "115", name: "Colorado Rockies" },
+            { id: "116", name: "Detroit Tigers" },
+            { id: "117", name: "Houston Astros" },
+            { id: "118", name: "Kansas City Royals" },
+            { id: "108", name: "Los Angeles Angels" },
+            { id: "119", name: "Los Angeles Dodgers" },
+            { id: "146", name: "Miami Marlins" },
+            { id: "158", name: "Milwaukee Brewers" },
+            { id: "142", name: "Minnesota Twins" },
+            { id: "121", name: "New York Mets" },
+            { id: "147", name: "New York Yankees" },
+            { id: "133", name: "Oakland Athletics" },
+            { id: "143", name: "Philadelphia Phillies" },
+            { id: "134", name: "Pittsburgh Pirates" },
+            { id: "135", name: "San Diego Padres" },
+            { id: "137", name: "San Francisco Giants" },
+            { id: "136", name: "Seattle Mariners" },
+            { id: "138", name: "St. Louis Cardinals" },
+            { id: "139", name: "Tampa Bay Rays" },
+            { id: "140", name: "Texas Rangers" },
+            { id: "141", name: "Toronto Blue Jays" },
+            { id: "120", name: "Washington Nationals" }
         ];
 
         // Sort teams alphabetically
@@ -353,38 +353,17 @@ class MLBAnalyzer {
             awayTeamSelect.appendChild(option);
         });
 
-        // Add event listeners for team selection
-        homeTeamSelect.addEventListener('change', async (e) => {
-            if (e.target.value) {
-                document.getElementById('loading').style.display = 'block';
-                const stats = await this.fetchTeamStats(e.target.value);
-                if (stats) {
-                    this.updateTeamFields({ id: e.target.value, side: 'home' }, stats);
-                }
-                document.getElementById('loading').style.display = 'none';
-            }
-        });
-
-        awayTeamSelect.addEventListener('change', async (e) => {
-            if (e.target.value) {
-                document.getElementById('loading').style.display = 'block';
-                const stats = await this.fetchTeamStats(e.target.value);
-                if (stats) {
-                    this.updateTeamFields({ id: e.target.value, side: 'away' }, stats);
-                }
-                document.getElementById('loading').style.display = 'none';
-            }
-        });
-
         // Store team data
         this.teamStats = mlbTeams.reduce((acc, team) => {
             acc[team.id] = {
                 name: team.name,
-                abbreviation: team.id,
+                id: team.id,
                 stats: null
             };
             return acc;
         }, {});
+
+        console.log('Team stats initialized:', this.teamStats);
     }
 
     updateTeamFields(team, stats) {
@@ -794,47 +773,99 @@ class MLBAnalyzer {
         try {
             this.addUpdate('Analysis Started', 'Beginning matchup analysis');
             
-            const homeTeam = document.getElementById('homeTeamSelect').value;
-            const awayTeam = document.getElementById('awayTeamSelect').value;
-            const weather = document.getElementById('weather').value;
-            const spread = parseFloat(document.getElementById('spread').value);
-            const total = parseFloat(document.getElementById('total').value);
-
-            // Fetch all necessary data
-            const [homeStats, awayStats, ballparkFactors, injuries, h2hData, bullpenStatus] = await Promise.all([
-                this.fetchTeamStats('home'),
-                this.fetchTeamStats('away'),
-                this.fetchBallparkInfo(),
-                this.fetchInjuryReport('both'),
-                this.fetchHeadToHead(homeTeam, awayTeam),
-                this.fetchBullpenStatus('both')
-            ]);
-
-            // Calculate adjustments based on additional factors
-            const ballparkMultiplier = this.calculateBallparkMultiplier(ballparkFactors);
-            const injuryAdjustment = this.calculateInjuryAdjustment(injuries);
-            const h2hAdvantage = this.calculateH2HAdvantage(h2hData);
-            const bullpenFactor = this.calculateBullpenFactor(bullpenStatus);
-
-            // Apply all factors to final projection
-            const projection = this.calculateFinalProjection(
-                homeStats,
-                awayStats,
-                weather,
-                ballparkMultiplier,
-                injuryAdjustment,
-                h2hAdvantage,
-                bullpenFactor
-            );
-
-            this.addUpdate('Analysis Complete', 'Matchup analysis finished successfully');
+            const homeTeamSelect = document.getElementById('homeTeamSelect');
+            const awayTeamSelect = document.getElementById('awayTeamSelect');
             
-            // Update UI with results
-            this.updateUIWithResults(projection, spread, total);
+            const homeTeam = {
+                id: homeTeamSelect.value,
+                name: homeTeamSelect.options[homeTeamSelect.selectedIndex]?.text || '',
+                side: 'home',
+                avg: getFormValue('homeAVG'),
+                obp: getFormValue('homeOBP'),
+                slg: getFormValue('homeSLG'),
+                era: getFormValue('homeERA'),
+                whip: getFormValue('homeWHIP'),
+                babip: getFormValue('homeBABIP'),
+                iso: getFormValue('homeISO')
+            };
+
+            const awayTeam = {
+                id: awayTeamSelect.value,
+                name: awayTeamSelect.options[awayTeamSelect.selectedIndex]?.text || '',
+                side: 'away',
+                avg: getFormValue('awayAVG'),
+                obp: getFormValue('awayOBP'),
+                slg: getFormValue('awaySLG'),
+                era: getFormValue('awayERA'),
+                whip: getFormValue('awayWHIP'),
+                babip: getFormValue('awayBABIP'),
+                iso: getFormValue('awayISO')
+            };
+
+            // Validate team selection
+            if (!homeTeam.id || !awayTeam.id) {
+                showError('Please select both teams');
+                return;
+            }
+
+            // Validate that teams are different
+            if (homeTeam.id === awayTeam.id) {
+                showError('Please select different teams');
+                return;
+            }
+
+            // Show loading indicator
+            document.getElementById('loading').style.display = 'block';
+
+            // Fetch latest stats if available
+            if (homeTeam.id) {
+                console.log('Fetching home team stats...', homeTeam.id);
+                const homeStats = await this.fetchTeamStats(homeTeam.id);
+                if (homeStats) {
+                    this.updateTeamFields({ ...homeTeam, side: 'home' }, homeStats);
+                }
+            }
+            if (awayTeam.id) {
+                console.log('Fetching away team stats...', awayTeam.id);
+                const awayStats = await this.fetchTeamStats(awayTeam.id);
+                if (awayStats) {
+                    this.updateTeamFields({ ...awayTeam, side: 'away' }, awayStats);
+                }
+            }
+
+            // Hide loading indicator
+            document.getElementById('loading').style.display = 'none';
+
+            // Get updated form values after stats have been populated
+            homeTeam.avg = getFormValue('homeAVG');
+            homeTeam.obp = getFormValue('homeOBP');
+            homeTeam.slg = getFormValue('homeSLG');
+            homeTeam.era = getFormValue('homeERA');
+            homeTeam.whip = getFormValue('homeWHIP');
+            homeTeam.babip = getFormValue('homeBABIP');
+            homeTeam.iso = getFormValue('homeISO');
+
+            awayTeam.avg = getFormValue('awayAVG');
+            awayTeam.obp = getFormValue('awayOBP');
+            awayTeam.slg = getFormValue('awaySLG');
+            awayTeam.era = getFormValue('awayERA');
+            awayTeam.whip = getFormValue('awayWHIP');
+            awayTeam.babip = getFormValue('awayBABIP');
+            awayTeam.iso = getFormValue('awayISO');
+
+            const marketSpread = getFormValue('marketSpread');
+            const marketTotal = getFormValue('marketTotal');
+            const weather = document.getElementById('weather').value;
+
+            const results = this.findValue(homeTeam, awayTeam, marketSpread, marketTotal, weather);
+            updateUIWithResults(results);
+
+            // Update last update timestamp
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleString();
         } catch (error) {
             console.error('Error analyzing matchup:', error);
-            this.addUpdate('Error', `Analysis failed: ${error.message}`);
-            document.getElementById('results').innerHTML = 'Error analyzing matchup. Please try again.';
+            document.getElementById('loading').style.display = 'none';
+            showError(`Error analyzing matchup: ${error.message}`);
         }
     }
 }
@@ -849,9 +880,12 @@ async function analyzeMatchup() {
         const analyzer = new MLBAnalyzer();
         
         // Get form values
+        const homeTeamSelect = document.getElementById('homeTeamSelect');
+        const awayTeamSelect = document.getElementById('awayTeamSelect');
+        
         const homeTeam = {
-            id: document.getElementById('homeTeamSelect').value,
-            name: document.getElementById('homeTeamSelect').options[document.getElementById('homeTeamSelect').selectedIndex].text,
+            id: homeTeamSelect.value,
+            name: homeTeamSelect.options[homeTeamSelect.selectedIndex]?.text || '',
             side: 'home',
             avg: getFormValue('homeAVG'),
             obp: getFormValue('homeOBP'),
@@ -863,8 +897,8 @@ async function analyzeMatchup() {
         };
 
         const awayTeam = {
-            id: document.getElementById('awayTeamSelect').value,
-            name: document.getElementById('awayTeamSelect').options[document.getElementById('awayTeamSelect').selectedIndex].text,
+            id: awayTeamSelect.value,
+            name: awayTeamSelect.options[awayTeamSelect.selectedIndex]?.text || '',
             side: 'away',
             avg: getFormValue('awayAVG'),
             obp: getFormValue('awayOBP'),
@@ -874,10 +908,6 @@ async function analyzeMatchup() {
             babip: getFormValue('awayBABIP'),
             iso: getFormValue('awayISO')
         };
-
-        const marketSpread = getFormValue('marketSpread');
-        const marketTotal = getFormValue('marketTotal');
-        const weather = document.getElementById('weather').value;
 
         // Validate team selection
         if (!homeTeam.id || !awayTeam.id) {
@@ -896,17 +926,17 @@ async function analyzeMatchup() {
 
         // Fetch latest stats if available
         if (homeTeam.id) {
-            console.log('Fetching home team stats...');
+            console.log('Fetching home team stats...', homeTeam.id);
             const homeStats = await analyzer.fetchTeamStats(homeTeam.id);
             if (homeStats) {
-                analyzer.updateTeamFields(homeTeam, homeStats);
+                analyzer.updateTeamFields({ ...homeTeam, side: 'home' }, homeStats);
             }
         }
         if (awayTeam.id) {
-            console.log('Fetching away team stats...');
+            console.log('Fetching away team stats...', awayTeam.id);
             const awayStats = await analyzer.fetchTeamStats(awayTeam.id);
             if (awayStats) {
-                analyzer.updateTeamFields(awayTeam, awayStats);
+                analyzer.updateTeamFields({ ...awayTeam, side: 'away' }, awayStats);
             }
         }
 
@@ -930,7 +960,11 @@ async function analyzeMatchup() {
         awayTeam.babip = getFormValue('awayBABIP');
         awayTeam.iso = getFormValue('awayISO');
 
-        const results = await analyzer.analyzeMatchup();
+        const marketSpread = getFormValue('marketSpread');
+        const marketTotal = getFormValue('marketTotal');
+        const weather = document.getElementById('weather').value;
+
+        const results = analyzer.findValue(homeTeam, awayTeam, marketSpread, marketTotal, weather);
         updateUIWithResults(results);
 
         // Update last update timestamp
