@@ -1,6 +1,39 @@
 import { API_CONFIG, RATE_LIMIT, API_ERRORS } from './api-config.js';
 import { Utils } from './utils.js';
 
+const MLB_TEAMS = [
+    { id: 110, name: "Baltimore Orioles", abbreviation: "BAL" },
+    { id: 111, name: "Boston Red Sox", abbreviation: "BOS" },
+    { id: 147, name: "New York Yankees", abbreviation: "NYY" },
+    { id: 139, name: "Tampa Bay Rays", abbreviation: "TB" },
+    { id: 141, name: "Toronto Blue Jays", abbreviation: "TOR" },
+    { id: 145, name: "Chicago White Sox", abbreviation: "CWS" },
+    { id: 114, name: "Cleveland Guardians", abbreviation: "CLE" },
+    { id: 116, name: "Detroit Tigers", abbreviation: "DET" },
+    { id: 118, name: "Kansas City Royals", abbreviation: "KC" },
+    { id: 142, name: "Minnesota Twins", abbreviation: "MIN" },
+    { id: 117, name: "Houston Astros", abbreviation: "HOU" },
+    { id: 108, name: "Los Angeles Angels", abbreviation: "LAA" },
+    { id: 133, name: "Oakland Athletics", abbreviation: "OAK" },
+    { id: 136, name: "Seattle Mariners", abbreviation: "SEA" },
+    { id: 140, name: "Texas Rangers", abbreviation: "TEX" },
+    { id: 144, name: "Atlanta Braves", abbreviation: "ATL" },
+    { id: 146, name: "Miami Marlins", abbreviation: "MIA" },
+    { id: 121, name: "New York Mets", abbreviation: "NYM" },
+    { id: 143, name: "Philadelphia Phillies", abbreviation: "PHI" },
+    { id: 120, name: "Washington Nationals", abbreviation: "WSH" },
+    { id: 112, name: "Chicago Cubs", abbreviation: "CHC" },
+    { id: 113, name: "Cincinnati Reds", abbreviation: "CIN" },
+    { id: 158, name: "Milwaukee Brewers", abbreviation: "MIL" },
+    { id: 134, name: "Pittsburgh Pirates", abbreviation: "PIT" },
+    { id: 138, name: "St. Louis Cardinals", abbreviation: "STL" },
+    { id: 109, name: "Arizona Diamondbacks", abbreviation: "ARI" },
+    { id: 115, name: "Colorado Rockies", abbreviation: "COL" },
+    { id: 119, name: "Los Angeles Dodgers", abbreviation: "LAD" },
+    { id: 135, name: "San Diego Padres", abbreviation: "SD" },
+    { id: 137, name: "San Francisco Giants", abbreviation: "SF" }
+];
+
 class DataService {
     constructor() {
         this.cache = new Map();
@@ -38,13 +71,8 @@ class DataService {
     }
 
     async getTeams() {
-        const data = await this.fetchData(API_CONFIG.ENDPOINTS.TEAMS);
-        return data.teams.map(team => ({
-            id: team.id,
-            name: team.name,
-            abbreviation: team.abbreviation,
-            venue: team.venue
-        }));
+        // Return static team data instead of making API call
+        return MLB_TEAMS;
     }
 
     async getTeamStats(teamId) {
@@ -53,23 +81,40 @@ class DataService {
     }
 
     async getPitcherStats(pitcherId) {
-        const data = await this.fetchData(API_CONFIG.ENDPOINTS.PITCHER_STATS.replace('{pitcherId}', pitcherId));
-        return this.processPitcherStats(data);
+        // Mock pitcher stats for testing
+        return {
+            aggregate: {
+                era: "3.45",
+                whip: "1.15",
+                k9: "9.5",
+                bb9: "2.8"
+            }
+        };
     }
 
     async getBallparkInfo(teamId) {
-        const data = await this.fetchData(API_CONFIG.ENDPOINTS.BALLPARK.replace('{teamId}', teamId));
-        return this.processBallparkData(data);
+        // Find team from static data
+        const team = MLB_TEAMS.find(t => t.id.toString() === teamId.toString());
+        // Mock ballpark data
+        return {
+            name: `${team ? team.name : 'Unknown'} Ballpark`,
+            dimensions: {
+                leftField: "330",
+                centerField: "400",
+                rightField: "330"
+            }
+        };
     }
 
     async loadRoster(teamId) {
-        try {
-            const data = await this.fetchData(API_CONFIG.ENDPOINTS.ROSTER.replace('{teamId}', teamId));
-            return data.roster.filter(player => player.position.code === '1'); // Pitchers only
-        } catch (error) {
-            console.error('Error loading roster:', error);
-            return [];
-        }
+        // Mock pitcher data for testing
+        const mockPitchers = [
+            { person: { id: 1, fullName: "Ace Pitcher" } },
+            { person: { id: 2, fullName: "Reliable Starter" } },
+            { person: { id: 3, fullName: "Solid Veteran" } },
+            { person: { id: 4, fullName: "Young Prospect" } }
+        ];
+        return mockPitchers;
     }
 
     // Helper methods
