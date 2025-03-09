@@ -3,7 +3,7 @@ const API_CONFIG = {
     PROXY_URL: 'https://corsproxy.io/?',
     ENDPOINTS: {
         TEAMS: '/teams?sportId=1',
-        TEAM_STATS: '/teams/{teamId}/stats?stats=season,statSplits&group=hitting,pitching',
+        TEAM_STATS: '/teams/{teamId}/stats?stats=statsSingleSeason,statsSplits7Days&group=hitting,pitching&season=2024',
         SCHEDULE: '/schedule/games/?sportId=1',
         PITCHER_STATS: '/people/{pitcherId}/stats?stats=gameLog&group=pitching',
         ROSTER: '/teams/{teamId}/roster/Active',

@@ -86,32 +86,51 @@ class DataService {
                 throw new Error('Invalid team stats data received');
             }
 
-            // Find hitting and pitching stats
-            const hittingStats = data.stats.find(stat => stat.group === 'hitting' || stat.group.displayName === 'hitting');
-            const pitchingStats = data.stats.find(stat => stat.group === 'pitching' || stat.group.displayName === 'pitching');
+            // Find season and last 7 days stats
+            const seasonStats = data.stats.find(stat => stat.type === 'statsSingleSeason' || stat.type.displayName === 'statsSingleSeason');
+            const last7DaysStats = data.stats.find(stat => stat.type === 'statsSplits7Days' || stat.type.displayName === 'statsSplits7Days');
 
-            if (!hittingStats?.splits?.[0]?.stat || !pitchingStats?.splits?.[0]?.stat) {
-                console.error('Missing hitting or pitching stats:', { hittingStats, pitchingStats });
+            if (!seasonStats?.splits?.[0] || !last7DaysStats?.splits?.[0]) {
+                console.error('Missing stats data:', { seasonStats, last7DaysStats });
                 throw new Error('Missing team statistics');
             }
 
-            const hitting = hittingStats.splits[0].stat;
-            const pitching = pitchingStats.splits[0].stat;
+            // Get hitting and pitching splits for both timeframes
+            const seasonHitting = seasonStats.splits[0].stat;
+            const seasonPitching = seasonStats.splits[1]?.stat;
+            const last7Hitting = last7DaysStats.splits[0].stat;
+            const last7Pitching = last7DaysStats.splits[1]?.stat;
 
             return {
                 batting: {
-                    avg: Utils.formatNumber(hitting.avg || 0, 3),
-                    obp: Utils.formatNumber(hitting.obp || 0, 3),
-                    slg: Utils.formatNumber(hitting.slg || 0, 3),
-                    ops: Utils.formatNumber(hitting.ops || 0, 3),
-                    iso: Utils.formatNumber((hitting.slg || 0) - (hitting.avg || 0), 3),
-                    babip: Utils.formatNumber(hitting.babip || 0, 3)
+                    avg: Utils.formatNumber(last7Hitting?.avg || 0, 3),
+                    obp: Utils.formatNumber(last7Hitting?.obp || 0, 3),
+                    slg: Utils.formatNumber(last7Hitting?.slg || 0, 3),
+                    ops: Utils.formatNumber(last7Hitting?.ops || 0, 3),
+                    iso: Utils.formatNumber((last7Hitting?.slg || 0) - (last7Hitting?.avg || 0), 3),
+                    babip: Utils.formatNumber(last7Hitting?.babip || 0, 3)
                 },
                 pitching: {
-                    era: Utils.formatNumber(pitching.era || 0, 2),
-                    whip: Utils.formatNumber(pitching.whip || 0, 2),
-                    k9: Utils.formatNumber(pitching.strikeoutsPer9Inn || 0, 1),
-                    bb9: Utils.formatNumber(pitching.walksPer9Inn || 0, 1)
+                    era: Utils.formatNumber(last7Pitching?.era || 0, 2),
+                    whip: Utils.formatNumber(last7Pitching?.whip || 0, 2),
+                    k9: Utils.formatNumber(last7Pitching?.strikeoutsPer9Inn || 0, 1),
+                    bb9: Utils.formatNumber(last7Pitching?.walksPer9Inn || 0, 1)
+                },
+                season: {
+                    batting: {
+                        avg: Utils.formatNumber(seasonHitting?.avg || 0, 3),
+                        obp: Utils.formatNumber(seasonHitting?.obp || 0, 3),
+                        slg: Utils.formatNumber(seasonHitting?.slg || 0, 3),
+                        ops: Utils.formatNumber(seasonHitting?.ops || 0, 3),
+                        iso: Utils.formatNumber((seasonHitting?.slg || 0) - (seasonHitting?.avg || 0), 3),
+                        babip: Utils.formatNumber(seasonHitting?.babip || 0, 3)
+                    },
+                    pitching: {
+                        era: Utils.formatNumber(seasonPitching?.era || 0, 2),
+                        whip: Utils.formatNumber(seasonPitching?.whip || 0, 2),
+                        k9: Utils.formatNumber(seasonPitching?.strikeoutsPer9Inn || 0, 1),
+                        bb9: Utils.formatNumber(seasonPitching?.walksPer9Inn || 0, 1)
+                    }
                 }
             };
         } catch (error) {
