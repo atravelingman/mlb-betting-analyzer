@@ -1,171 +1,169 @@
 # MLB Betting Analyzer
 
-A sophisticated web-based tool for analyzing MLB matchups and identifying betting value. The analyzer combines real-time team statistics, starting pitcher performance, weather conditions, and advanced analytics to provide data-driven betting recommendations.
+A sophisticated web application for analyzing MLB matchups and providing data-driven betting insights. This tool combines real-time statistics, advanced analytics, and machine learning to help users make informed betting decisions.
 
-![MLB Betting Analyzer](https://raw.githubusercontent.com/atravelingman/mlb-betting-analyzer/main/screenshot.png)
+## Features
 
-## 🌟 Features
+- **Real-time Team Statistics**
+  - Batting averages, OBP, SLG, ISO, and BABIP
+  - Team ERA, WHIP, and other pitching metrics
+  - Starting pitcher performance analysis
+  - Bullpen status and fatigue tracking
 
-### Real-Time Statistics
-- **Team Performance Metrics**
-  - Batting Average (AVG)
-  - On-base Percentage (OBP)
-  - Slugging Percentage (SLG)
-  - Isolated Power (ISO)
-  - BABIP (Batting Average on Balls in Play)
-  - Team ERA
-  - Team WHIP
+- **Advanced Analytics**
+  - Run expectancy calculations
+  - Weather impact analysis
+  - Ballpark factor adjustments
+  - Head-to-head matchup history
 
-- **Starting Pitcher Analysis**
-  - ERA (Last 3 starts)
-  - WHIP (Last 3 starts)
-  - K/9 (Strikeouts per 9 innings)
-  - BB/9 (Walks per 9 innings)
+- **Comprehensive Analysis**
+  - Spread value calculations
+  - Over/under recommendations
+  - Team advantage assessments
+  - Confidence ratings for predictions
 
-### Advanced Analytics
+- **Additional Information**
+  - Injury reports
+  - Bullpen availability
+  - Recent performance trends
+  - Venue-specific statistics
 
-#### Ballpark Analysis
-- Detailed dimensions for all fields
-- Park-specific run scoring factors
-- Home run index
-- Weather impact considerations
-
-#### Head-to-Head Analysis
-- Season series record
-- Last 5 matchups
-- Pitcher vs. Team performance
-- Historical matchup trends
-
-#### Bullpen Status
-- Recent usage tracking
-- Fatigue indicators
-- Performance metrics
-- Availability status
-
-#### Injury Impact
-- Real-time injury updates
-- Impact assessment
-- Position-specific analysis
-- Roster depth evaluation
-
-### Weather Impact Analysis
-
-| Condition | Run Impact | HR Impact | Details |
-|-----------|------------|-----------|----------|
-| Normal | 1.0x | 1.0x | Baseline conditions |
-| Wind Out | 1.15x | 1.3x | Increased scoring potential |
-| Wind In | 0.85x | 0.7x | Reduced scoring potential |
-| Rain | 0.9x | 0.85x | Slightly suppressed scoring |
-| Hot (85°F+) | 1.1x | 1.15x | Enhanced scoring conditions |
-| Cold (<50°F) | 0.9x | 0.8x | Reduced scoring potential |
-| Dome | 1.0x | 1.0x | Controlled environment |
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Modern web browser
-- Internet connection for real-time data
-
-### Installation
+## Getting Started
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/atravelingman/mlb-betting-analyzer.git
+git clone https://github.com/yourusername/mlb-betting-analyzer.git
+cd mlb-betting-analyzer
 ```
 
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-3. Run the local server:
+2. Open `index.html` in your web browser or set up a local server:
 ```bash
 python -m http.server 8000
+# Then visit http://localhost:8000
 ```
 
-4. Open in your browser:
-```
-http://localhost:8000
-```
+3. Select teams and input market values to begin analysis.
 
-## 📊 How to Use
+## Usage
 
-1. **Select Teams**
-   - Choose home and away teams from the dropdowns
-   - Statistics automatically populate
+1. **Team Selection**
+   - Choose home and away teams from the dropdown menus
+   - Statistics will automatically populate
 
-2. **Choose Pitchers**
+2. **Pitcher Selection**
    - Select starting pitchers for both teams
-   - View their recent performance metrics
+   - View detailed pitcher statistics
 
-3. **Set Conditions**
+3. **Market Values**
+   - Enter current betting spread
+   - Input over/under total
    - Select weather conditions
-   - Input current market lines
-   - Review ballpark factors
 
-4. **Analyze Results**
-   - Click "Analyze Matchup"
-   - Review projected scores
-   - Check value recommendations
-   - Consider additional factors
+4. **Analysis**
+   - Click "Analyze Matchup" for comprehensive results
+   - Review confidence ratings and recommendations
+   - Check injury reports and bullpen status
 
-## 🧮 Analysis Methodology
+## Technical Details
 
-### Run Expectancy Calculation
-The analyzer uses a sophisticated formula incorporating:
-- Team OPS (4.0x weight)
-- Starting Pitcher WHIP (2.5x weight)
-- Team BABIP (1.5x weight)
-- Isolated Power (2.0x weight)
-- Starting Pitcher ERA impact
-- K/9 impact
-- Weather adjustments
+### Dependencies
+- Bootstrap 5.3.0
+- Font Awesome 6.0.0
+- MLB Stats API
 
-### Value Detection Thresholds
-- Spread value: 2.0 runs
-- Total value: 3.0 runs
+### Browser Support
+- Chrome (latest)
+- Firefox (latest)
+- Safari (latest)
+- Edge (latest)
 
-## 📱 Modern UI Features
+### API Usage
+The application uses the MLB Stats API for real-time data. Please note:
+- API calls are rate-limited
+- Some data may be delayed by up to 15 minutes
+- CORS proxy may be required for certain endpoints
 
-- Responsive design for all devices
-- Real-time updates
-- Interactive statistics display
-- Clear visual indicators
-- Tooltips for advanced metrics
-- Historical tracking
-- Status updates
+## Contributing
 
-## ⚠️ Disclaimer
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
-This tool is for educational and entertainment purposes only. Please gamble responsibly and in accordance with your local laws and regulations. Past performance does not guarantee future results.
+## Development
 
-## 🔄 Updates
+### Setup
+1. Install dependencies:
+```bash
+npm install
+```
 
-The analyzer is regularly updated with:
-- Latest MLB statistics
-- New analytical features
-- UI improvements
-- Bug fixes
-- Performance optimizations
+2. Run development server:
+```bash
+npm run dev
+```
 
-## 🤝 Contributing
+### Building
+```bash
+npm run build
+```
 
-Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+### Testing
+```bash
+npm test
+```
 
-## 📄 License
+## Code Style
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Follow the style guide in `style-guide.md` for consistent development. Key points:
+- Use semantic HTML
+- Follow BEM naming convention
+- Maintain responsive design principles
+- Implement proper error handling
 
-## 🙏 Acknowledgments
+## License
 
-- MLB Stats API for real-time data
-- Bootstrap for UI components
-- Community contributors
-- MLB statistical community
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 📞 Support
+## Acknowledgments
 
-For support, please open an issue in the GitHub repository or contact the maintainers directly.
+- MLB Stats API for providing real-time baseball statistics
+- Bootstrap team for the responsive framework
+- Font Awesome for the comprehensive icon set
 
----
-Made with ❤️ for baseball analytics enthusiasts
+## Support
+
+For support, please:
+1. Check the [FAQ](docs/FAQ.md)
+2. Search existing [Issues](https://github.com/yourusername/mlb-betting-analyzer/issues)
+3. Create a new issue if needed
+
+## Roadmap
+
+- [ ] Add historical betting trends
+- [ ] Implement machine learning predictions
+- [ ] Add player prop analysis
+- [ ] Include live game tracking
+- [ ] Develop mobile app version
+
+## Authors
+
+- Your Name - Initial work - [YourGitHub](https://github.com/yourusername)
+
+## Version History
+
+* 1.0.0
+    * Initial Release
+    * Basic analysis functionality
+    * Team and pitcher statistics
+* 1.1.0
+    * Added weather impact analysis
+    * Improved confidence ratings
+    * Enhanced UI/UX
+
+## Contact
+
+Your Name - [@yourtwitter](https://twitter.com/yourtwitter) - email@example.com
+
+Project Link: [https://github.com/yourusername/mlb-betting-analyzer](https://github.com/yourusername/mlb-betting-analyzer)
