@@ -31,26 +31,26 @@ class MLBAnalyzer {
 
     async initializeEventListeners() {
         // Existing listeners
-        document.getElementById('homeTeam').addEventListener('change', () => this.fetchTeamStats('home'));
-        document.getElementById('awayTeam').addEventListener('change', () => this.fetchTeamStats('away'));
+        document.getElementById('homeTeamSelect').addEventListener('change', () => this.fetchTeamStats('home'));
+        document.getElementById('awayTeamSelect').addEventListener('change', () => this.fetchTeamStats('away'));
         
         // New listeners for additional features
-        document.getElementById('homeTeam').addEventListener('change', () => {
+        document.getElementById('homeTeamSelect').addEventListener('change', () => {
             this.fetchBallparkInfo();
             this.fetchInjuryReport('home');
             this.fetchBullpenStatus('home');
         });
         
-        document.getElementById('awayTeam').addEventListener('change', () => {
+        document.getElementById('awayTeamSelect').addEventListener('change', () => {
             this.fetchInjuryReport('away');
             this.fetchBullpenStatus('away');
         });
 
         // Update H2H when both teams are selected
-        ['homeTeam', 'awayTeam'].forEach(id => {
+        ['homeTeamSelect', 'awayTeamSelect'].forEach(id => {
             document.getElementById(id).addEventListener('change', () => {
-                const homeTeam = document.getElementById('homeTeam').value;
-                const awayTeam = document.getElementById('awayTeam').value;
+                const homeTeam = document.getElementById('homeTeamSelect').value;
+                const awayTeam = document.getElementById('awayTeamSelect').value;
                 if (homeTeam && awayTeam) {
                     this.fetchHeadToHead(homeTeam, awayTeam);
                 }
@@ -555,7 +555,7 @@ class MLBAnalyzer {
     }
 
     async fetchBallparkInfo() {
-        const homeTeam = document.getElementById('homeTeam').value;
+        const homeTeam = document.getElementById('homeTeamSelect').value;
         if (!homeTeam) return;
 
         try {
@@ -793,8 +793,8 @@ class MLBAnalyzer {
         try {
             this.addUpdate('Analysis Started', 'Beginning matchup analysis');
             
-            const homeTeam = document.getElementById('homeTeam').value;
-            const awayTeam = document.getElementById('awayTeam').value;
+            const homeTeam = document.getElementById('homeTeamSelect').value;
+            const awayTeam = document.getElementById('awayTeamSelect').value;
             const weather = document.getElementById('weather').value;
             const spread = parseFloat(document.getElementById('spread').value);
             const total = parseFloat(document.getElementById('total').value);

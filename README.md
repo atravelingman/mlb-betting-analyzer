@@ -1,6 +1,10 @@
 # MLB Betting Analyzer
 
+<<<<<<< HEAD
 A sophisticated tool for analyzing MLB matchups and identifying betting value, incorporating team statistics, starting pitcher performance, weather conditions, and advanced game factors.
+=======
+A sophisticated tool for analyzing MLB matchups and identifying betting value, incorporating team statistics, starting pitcher performance, and weather conditions.
+>>>>>>> 6071b2357aafe3cf3259970c764f56ddf6ceb634
 
 ## Features
 
@@ -68,6 +72,7 @@ The analyzer identifies betting value by comparing projected scores to market li
 - Spread threshold: 2.0 runs
 - Total threshold: 3.0 runs
 
+<<<<<<< HEAD
 ### Advanced Game Factors
 
 #### Ballpark Analysis Dropdown
@@ -122,12 +127,15 @@ The analyzer identifies betting value by comparing projected scores to market li
   - WHIP last 7 days
   - Inherited runners scored %
 
+=======
+>>>>>>> 6071b2357aafe3cf3259970c764f56ddf6ceb634
 ## How to Use
 
 1. Select home and away teams from the dropdowns
 2. Wait for team statistics to auto-populate
 3. Select starting pitchers for both teams
 4. Choose the weather condition for the game
+<<<<<<< HEAD
 5. **New Analysis Options**:
    - Select ballpark factors from dropdown
    - Check injury status for both teams
@@ -135,10 +143,15 @@ The analyzer identifies betting value by comparing projected scores to market li
    - Check bullpen availability
 6. Enter the market spread and total
 7. Click "Analyze Matchup" to get:
+=======
+5. Enter the market spread and total
+6. Click "Analyze Matchup" to get:
+>>>>>>> 6071b2357aafe3cf3259970c764f56ddf6ceb634
    - Projected scores
    - Spread value
    - Total value
    - Betting recommendations
+<<<<<<< HEAD
    - Impact analysis of selected factors
 
 ### Factor Weights in Analysis
@@ -148,6 +161,8 @@ The analyzer now incorporates these additional factors with the following weight
 - Significant Injuries: 0.8x to 1.0x team strength
 - Head-to-Head Advantage: 1.1x for strong historical performance
 - Bullpen Fatigue: 0.9x to 1.0x late game projection
+=======
+>>>>>>> 6071b2357aafe3cf3259970c764f56ddf6ceb634
 
 ## Technical Details
 
