@@ -71,6 +71,23 @@
             margin-bottom: 1rem;
             font-style: italic;
         }
+        .analysis-section {
+            margin: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .status-green { color: green; }
+        .status-yellow { color: #cc9900; }
+        .status-orange { color: #ff6600; }
+        .status-red { color: red; }
+        .fatigue-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
     </style>
 </head>
 <body>
@@ -245,6 +262,50 @@
                 <div id="results"></div>
                 <div class="text-muted mt-2">
                     Last updated: <span id="lastUpdate">Never</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- New Update History Section -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">Update History</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="updateHistory" class="list-group">
+                            <!-- Update history will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- New Stats Changes Section -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Statistical Changes</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="statsChanges" class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Metric</th>
+                                        <th>Previous</th>
+                                        <th>Current</th>
+                                        <th>Change</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="statsChangesBody">
+                                    <!-- Stats changes will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

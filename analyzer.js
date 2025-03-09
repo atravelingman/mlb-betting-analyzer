@@ -21,6 +21,41 @@ class MLBAnalyzer {
             cold: { runs: 0.9, hr: 0.8 },
             dome: { runs: 1.0, hr: 1.0 }
         };
+
+        // Add update history tracking
+        this.updateHistory = [];
+        this.previousStats = {};
+
+        this.initializeEventListeners();
+    }
+
+    async initializeEventListeners() {
+        // Existing listeners
+        document.getElementById('homeTeam').addEventListener('change', () => this.fetchTeamStats('home'));
+        document.getElementById('awayTeam').addEventListener('change', () => this.fetchTeamStats('away'));
+        
+        // New listeners for additional features
+        document.getElementById('homeTeam').addEventListener('change', () => {
+            this.fetchBallparkInfo();
+            this.fetchInjuryReport('home');
+            this.fetchBullpenStatus('home');
+        });
+        
+        document.getElementById('awayTeam').addEventListener('change', () => {
+            this.fetchInjuryReport('away');
+            this.fetchBullpenStatus('away');
+        });
+
+        // Update H2H when both teams are selected
+        ['homeTeam', 'awayTeam'].forEach(id => {
+            document.getElementById(id).addEventListener('change', () => {
+                const homeTeam = document.getElementById('homeTeam').value;
+                const awayTeam = document.getElementById('awayTeam').value;
+                if (homeTeam && awayTeam) {
+                    this.fetchHeadToHead(homeTeam, awayTeam);
+                }
+            });
+        });
     }
 
     async fetchTeamStats(teamId) {
@@ -28,6 +63,8 @@ class MLBAnalyzer {
             const loadingDiv = document.getElementById('loading');
             loadingDiv.style.display = 'block';
 
+            this.addUpdate('Fetching Stats', `Getting latest statistics for ${teamId}`);
+            
             // Get team stats
             const teamStatsUrl = `${this.API_BASE_URL}/teams/${teamId}/stats?stats=season&group=hitting,pitching&season=2024&sportIds=1`;
             console.log('Fetching team stats:', teamStatsUrl);
@@ -107,16 +144,23 @@ class MLBAnalyzer {
                 })
             );
 
-            loadingDiv.style.display = 'none';
-
-            return {
+            const stats = {
                 batting: battingStats,
                 pitching: pitchingStatsFormatted,
                 pitchers: pitcherStats.filter(p => p.stats !== null)
             };
 
+            // Add tracking for the new stats
+            this.trackStatChanges({ id: teamId, side: teamId.startsWith('home') ? 'home' : 'away' }, stats);
+            this.addUpdate('Stats Updated', `Updated ${teamId.startsWith('home') ? 'home' : 'away'} team statistics`);
+
+            loadingDiv.style.display = 'none';
+
+            return stats;
+
         } catch (error) {
             console.error('Error fetching team stats:', error);
+            this.addUpdate('Error', `Failed to fetch team statistics: ${error.message}`);
             document.getElementById('loading').style.display = 'none';
             showError(`Error fetching team statistics: ${error.message}`);
             return null;
@@ -509,6 +553,289 @@ class MLBAnalyzer {
             };
         }
     }
+
+    async fetchBallparkInfo() {
+        const homeTeam = document.getElementById('homeTeam').value;
+        if (!homeTeam) return;
+
+        try {
+            const response = await fetch(`${this.API_BASE_URL}/teams/${homeTeam}/venue`);
+            const data = await response.json();
+            
+            // Update ballpark dimensions
+            document.getElementById('lfDistance').textContent = data.dimensions?.leftField || 'N/A';
+            document.getElementById('cfDistance').textContent = data.dimensions?.centerField || 'N/A';
+            document.getElementById('rfDistance').textContent = data.dimensions?.rightField || 'N/A';
+            
+            // Update park factors
+            const parkFactors = await this.fetchParkFactors(homeTeam);
+            document.getElementById('runIndex').textContent = parkFactors.runIndex;
+            document.getElementById('hrIndex').textContent = parkFactors.hrIndex;
+            document.getElementById('xbhIndex').textContent = parkFactors.xbhIndex;
+        } catch (error) {
+            console.error('Error fetching ballpark info:', error);
+        }
+    }
+
+    async fetchInjuryReport(team) {
+        const teamId = document.getElementById(`${team}Team`).value;
+        if (!teamId) return;
+
+        try {
+            const response = await fetch(`${this.API_BASE_URL}/teams/${teamId}/roster/injuries`);
+            const data = await response.json();
+            
+            const tableBody = document.getElementById(`${team}InjuryTable`);
+            tableBody.innerHTML = ''; // Clear existing entries
+            
+            data.injuries.forEach(injury => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${injury.player.fullName}</td>
+                    <td class="status-${this.getInjuryStatusClass(injury.status)}">${injury.status}</td>
+                    <td>${this.calculateImpact(injury)}</td>
+                    <td>${injury.player.primaryPosition}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        } catch (error) {
+            console.error(`Error fetching ${team} team injuries:`, error);
+        }
+    }
+
+    async fetchHeadToHead(homeTeam, awayTeam) {
+        try {
+            // Fetch season series
+            const seasonResponse = await fetch(`${this.API_BASE_URL}/schedule/games/?teamId=${homeTeam}&opponent=${awayTeam}&season=2024`);
+            const seasonData = await seasonResponse.json();
+            
+            // Update season record
+            const record = this.calculateH2HRecord(seasonData.dates, homeTeam);
+            document.getElementById('seasonRecord').textContent = `${record.wins}-${record.losses}`;
+            
+            // Update last 5 games
+            const lastFiveTable = document.getElementById('lastFiveGames');
+            lastFiveTable.innerHTML = ''; // Clear existing entries
+            
+            const last5Games = seasonData.dates.slice(-5);
+            for (const game of last5Games) {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${game.date}</td>
+                    <td>${game.games[0].score}</td>
+                    <td>${game.games[0].pitchers.join(' vs ')}</td>
+                `;
+                lastFiveTable.appendChild(row);
+            }
+            
+            // Update pitcher vs team stats
+            await this.fetchPitcherVsTeamStats();
+        } catch (error) {
+            console.error('Error fetching head-to-head data:', error);
+        }
+    }
+
+    async fetchBullpenStatus(team) {
+        const teamId = document.getElementById(`${team}Team`).value;
+        if (!teamId) return;
+
+        try {
+            // Fetch recent games to analyze bullpen usage
+            const response = await fetch(`${this.API_BASE_URL}/teams/${teamId}/stats/pitching?group=bullpen&season=2024&gameType=R&lastGames=3`);
+            const data = await response.json();
+            
+            const tableBody = document.getElementById(`${team}BullpenTable`);
+            tableBody.innerHTML = ''; // Clear existing entries
+            
+            data.stats.forEach(pitcher => {
+                const row = document.createElement('tr');
+                const fatigue = this.calculatePitcherFatigue(pitcher);
+                row.innerHTML = `
+                    <td>${pitcher.name}</td>
+                    <td>${pitcher.recentGames.join(', ')}</td>
+                    <td><span class="fatigue-indicator" style="background-color: ${fatigue.color}"></span>${fatigue.level}</td>
+                    <td>${fatigue.available ? 'Yes' : 'No'}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        } catch (error) {
+            console.error(`Error fetching ${team} bullpen status:`, error);
+        }
+    }
+
+    // Helper methods
+    getInjuryStatusClass(status) {
+        const statusMap = {
+            'Active': 'green',
+            'Day-to-Day': 'yellow',
+            '10-Day IL': 'orange',
+            '60-Day IL': 'red'
+        };
+        return statusMap[status] || 'green';
+    }
+
+    calculateImpact(injury) {
+        // Logic to determine player impact based on position, stats, etc.
+        return 'High'; // Placeholder
+    }
+
+    calculateH2HRecord(games, homeTeamId) {
+        // Logic to calculate head-to-head record
+        return { wins: 0, losses: 0 }; // Placeholder
+    }
+
+    calculatePitcherFatigue(pitcher) {
+        // Logic to determine pitcher fatigue level
+        return {
+            level: 'Low',
+            color: '#00ff00',
+            available: true
+        }; // Placeholder
+    }
+
+    // Add new method to track updates
+    addUpdate(updateType, details) {
+        const update = {
+            timestamp: new Date(),
+            type: updateType,
+            details: details
+        };
+        this.updateHistory.unshift(update);
+        this.displayUpdates();
+    }
+
+    // Add new method to track stat changes
+    trackStatChanges(team, newStats) {
+        const teamKey = `${team.side}_${team.id}`;
+        const oldStats = this.previousStats[teamKey] || {};
+        const changes = [];
+
+        // Compare batting stats
+        if (newStats.batting) {
+            Object.entries(newStats.batting).forEach(([key, value]) => {
+                if (oldStats.batting && oldStats.batting[key] !== value) {
+                    changes.push({
+                        metric: `${team.side.toUpperCase()} ${key.toUpperCase()}`,
+                        previous: oldStats.batting[key],
+                        current: value,
+                        change: (value - oldStats.batting[key]).toFixed(3)
+                    });
+                }
+            });
+        }
+
+        // Compare pitching stats
+        if (newStats.pitching) {
+            Object.entries(newStats.pitching).forEach(([key, value]) => {
+                if (oldStats.pitching && oldStats.pitching[key] !== value) {
+                    changes.push({
+                        metric: `${team.side.toUpperCase()} ${key.toUpperCase()}`,
+                        previous: oldStats.pitching[key],
+                        current: value,
+                        change: (value - oldStats.pitching[key]).toFixed(2)
+                    });
+                }
+            });
+        }
+
+        // Store new stats as previous for next comparison
+        this.previousStats[teamKey] = JSON.parse(JSON.stringify(newStats));
+
+        // Display changes
+        this.displayStatChanges(changes);
+    }
+
+    // Add new method to display updates
+    displayUpdates() {
+        const updateHistoryDiv = document.getElementById('updateHistory');
+        updateHistoryDiv.innerHTML = this.updateHistory
+            .slice(0, 10) // Show last 10 updates
+            .map(update => `
+                <div class="list-group-item">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">${update.type}</h6>
+                        <small>${update.timestamp.toLocaleTimeString()}</small>
+                    </div>
+                    <p class="mb-1">${update.details}</p>
+                </div>
+            `)
+            .join('');
+    }
+
+    // Add new method to display stat changes
+    displayStatChanges(changes) {
+        const statsChangesBody = document.getElementById('statsChangesBody');
+        
+        // Add new changes at the top
+        changes.forEach(change => {
+            const row = document.createElement('tr');
+            const changeValue = parseFloat(change.change);
+            const changeClass = changeValue > 0 ? 'text-success' : changeValue < 0 ? 'text-danger' : '';
+            
+            row.innerHTML = `
+                <td>${change.metric}</td>
+                <td>${change.previous}</td>
+                <td>${change.current}</td>
+                <td class="${changeClass}">${changeValue > 0 ? '+' : ''}${change.change}</td>
+            `;
+            
+            statsChangesBody.insertBefore(row, statsChangesBody.firstChild);
+        });
+
+        // Keep only last 20 rows
+        while (statsChangesBody.children.length > 20) {
+            statsChangesBody.removeChild(statsChangesBody.lastChild);
+        }
+    }
+
+    // Modify analyzeMatchup to track updates
+    async analyzeMatchup() {
+        try {
+            this.addUpdate('Analysis Started', 'Beginning matchup analysis');
+            
+            const homeTeam = document.getElementById('homeTeam').value;
+            const awayTeam = document.getElementById('awayTeam').value;
+            const weather = document.getElementById('weather').value;
+            const spread = parseFloat(document.getElementById('spread').value);
+            const total = parseFloat(document.getElementById('total').value);
+
+            // Fetch all necessary data
+            const [homeStats, awayStats, ballparkFactors, injuries, h2hData, bullpenStatus] = await Promise.all([
+                this.fetchTeamStats('home'),
+                this.fetchTeamStats('away'),
+                this.fetchBallparkInfo(),
+                this.fetchInjuryReport('both'),
+                this.fetchHeadToHead(homeTeam, awayTeam),
+                this.fetchBullpenStatus('both')
+            ]);
+
+            // Calculate adjustments based on additional factors
+            const ballparkMultiplier = this.calculateBallparkMultiplier(ballparkFactors);
+            const injuryAdjustment = this.calculateInjuryAdjustment(injuries);
+            const h2hAdvantage = this.calculateH2HAdvantage(h2hData);
+            const bullpenFactor = this.calculateBullpenFactor(bullpenStatus);
+
+            // Apply all factors to final projection
+            const projection = this.calculateFinalProjection(
+                homeStats,
+                awayStats,
+                weather,
+                ballparkMultiplier,
+                injuryAdjustment,
+                h2hAdvantage,
+                bullpenFactor
+            );
+
+            this.addUpdate('Analysis Complete', 'Matchup analysis finished successfully');
+            
+            // Update UI with results
+            this.updateUIWithResults(projection, spread, total);
+        } catch (error) {
+            console.error('Error analyzing matchup:', error);
+            this.addUpdate('Error', `Analysis failed: ${error.message}`);
+            document.getElementById('results').innerHTML = 'Error analyzing matchup. Please try again.';
+        }
+    }
 }
 
 function getFormValue(id) {
@@ -602,7 +929,7 @@ async function analyzeMatchup() {
         awayTeam.babip = getFormValue('awayBABIP');
         awayTeam.iso = getFormValue('awayISO');
 
-        const results = analyzer.findValue(homeTeam, awayTeam, marketSpread, marketTotal, weather);
+        const results = await analyzer.analyzeMatchup();
         updateUIWithResults(results);
 
         // Update last update timestamp
@@ -681,176 +1008,8 @@ function showError(message) {
     }, 5000);
 }
 
-// Add this test function at the bottom of the file
-function runTest() {
-    const analyzer = new MLBAnalyzer();
-    
-    // Test Case 1: Yankees vs Red Sox
-    const testCase1 = {
-        homeTeam: {
-            name: "NYY",
-            avg: 0.265,
-            obp: 0.330,
-            slg: 0.445,
-            era: 3.85,
-            whip: 1.23,
-            babip: 0.300,
-            iso: 0.180
-        },
-        awayTeam: {
-            name: "BOS",
-            avg: 0.270,
-            obp: 0.340,
-            slg: 0.435,
-            era: 4.05,
-            whip: 1.28,
-            babip: 0.305,
-            iso: 0.175
-        },
-        marketSpread: -1.5,
-        marketTotal: 8.5
-    };
-
-    // Test Case 2: Dodgers vs Giants
-    const testCase2 = {
-        homeTeam: {
-            name: "LAD",
-            avg: 0.275,
-            obp: 0.345,
-            slg: 0.465,
-            era: 3.55,
-            whip: 1.15,
-            babip: 0.310,
-            iso: 0.190
-        },
-        awayTeam: {
-            name: "SFG",
-            avg: 0.255,
-            obp: 0.325,
-            slg: 0.415,
-            era: 3.95,
-            whip: 1.25,
-            babip: 0.295,
-            iso: 0.170
-        },
-        marketSpread: -2.0,
-        marketTotal: 7.5
-    };
-
-    // Test Case 3: High-scoring vs Low-scoring teams
-    const testCase3 = {
-        homeTeam: {
-            name: "ATL",  // Atlanta Braves (high-scoring)
-            avg: 0.285,
-            obp: 0.365,
-            slg: 0.495,
-            era: 4.15,
-            whip: 1.30,
-            babip: 0.320,
-            iso: 0.225
-        },
-        awayTeam: {
-            name: "CLE",  // Cleveland (pitching-focused)
-            avg: 0.245,
-            obp: 0.310,
-            slg: 0.385,
-            era: 3.25,
-            whip: 1.12,
-            babip: 0.285,
-            iso: 0.145
-        },
-        marketSpread: -1.0,
-        marketTotal: 9.0
-    };
-
-    console.log("=== Test Case 1: Yankees vs Red Sox ===");
-    const results1 = analyzer.findValue(testCase1.homeTeam, testCase1.awayTeam, testCase1.marketSpread, testCase1.marketTotal);
-    console.log("Projections:", results1.projections);
-    console.log("Spread Value:", results1.spreadValue);
-    console.log("Total Value:", results1.totalValue);
-    console.log("Recommendations:", results1.recommendations);
-
-    console.log("\n=== Test Case 2: Dodgers vs Giants ===");
-    const results2 = analyzer.findValue(testCase2.homeTeam, testCase2.awayTeam, testCase2.marketSpread, testCase2.marketTotal);
-    console.log("Projections:", results2.projections);
-    console.log("Spread Value:", results2.spreadValue);
-    console.log("Total Value:", results2.totalValue);
-    console.log("Recommendations:", results2.recommendations);
-
-    console.log("\n=== Test Case 3: High-scoring vs Low-scoring ===");
-    const results3 = analyzer.findValue(testCase3.homeTeam, testCase3.awayTeam, testCase3.marketSpread, testCase3.marketTotal);
-    console.log("Projections:", results3.projections);
-    console.log("Spread Value:", results3.spreadValue);
-    console.log("Total Value:", results3.totalValue);
-    console.log("Recommendations:", results3.recommendations);
-
-    // Populate form with test data
-    function populateTestCase1() {
-        document.getElementById('homeTeam').value = testCase1.homeTeam.name;
-        document.getElementById('homeAVG').value = testCase1.homeTeam.avg;
-        document.getElementById('homeOBP').value = testCase1.homeTeam.obp;
-        document.getElementById('homeSLG').value = testCase1.homeTeam.slg;
-        document.getElementById('homeERA').value = testCase1.homeTeam.era;
-        document.getElementById('homeWHIP').value = testCase1.homeTeam.whip;
-        document.getElementById('homeBABIP').value = testCase1.homeTeam.babip;
-        document.getElementById('homeISO').value = testCase1.homeTeam.iso;
-
-        document.getElementById('awayTeam').value = testCase1.awayTeam.name;
-        document.getElementById('awayAVG').value = testCase1.awayTeam.avg;
-        document.getElementById('awayOBP').value = testCase1.awayTeam.obp;
-        document.getElementById('awaySLG').value = testCase1.awayTeam.slg;
-        document.getElementById('awayERA').value = testCase1.awayTeam.era;
-        document.getElementById('awayWHIP').value = testCase1.awayTeam.whip;
-        document.getElementById('awayBABIP').value = testCase1.awayTeam.babip;
-        document.getElementById('awayISO').value = testCase1.awayTeam.iso;
-
-        document.getElementById('marketSpread').value = testCase1.marketSpread;
-        document.getElementById('marketTotal').value = testCase1.marketTotal;
-    }
-
-    // Add function to populate Test Case 3
-    function populateTestCase3() {
-        document.getElementById('homeTeam').value = testCase3.homeTeam.name;
-        document.getElementById('homeAVG').value = testCase3.homeTeam.avg;
-        document.getElementById('homeOBP').value = testCase3.homeTeam.obp;
-        document.getElementById('homeSLG').value = testCase3.homeTeam.slg;
-        document.getElementById('homeERA').value = testCase3.homeTeam.era;
-        document.getElementById('homeWHIP').value = testCase3.homeTeam.whip;
-        document.getElementById('homeBABIP').value = testCase3.homeTeam.babip;
-        document.getElementById('homeISO').value = testCase3.homeTeam.iso;
-
-        document.getElementById('awayTeam').value = testCase3.awayTeam.name;
-        document.getElementById('awayAVG').value = testCase3.awayTeam.avg;
-        document.getElementById('awayOBP').value = testCase3.awayTeam.obp;
-        document.getElementById('awaySLG').value = testCase3.awayTeam.slg;
-        document.getElementById('awayERA').value = testCase3.awayTeam.era;
-        document.getElementById('awayWHIP').value = testCase3.awayTeam.whip;
-        document.getElementById('awayBABIP').value = testCase3.awayTeam.babip;
-        document.getElementById('awayISO').value = testCase3.awayTeam.iso;
-
-        document.getElementById('marketSpread').value = testCase3.marketSpread;
-        document.getElementById('marketTotal').value = testCase3.marketTotal;
-
-        // Set some additional factors
-        document.getElementById('weather').value = 'normal';
-        document.getElementById('h2hRecord').value = '6-4';
-        document.getElementById('injuriesImpact').value = '0';
-    }
-
-    // Update test buttons
-    const testButtons = document.createElement('div');
-    testButtons.className = 'mt-3 text-center';
-    testButtons.innerHTML = `
-        <button class="btn btn-info me-2" onclick="runTest()">Run All Tests</button>
-        <button class="btn btn-info me-2" onclick="populateTestCase1()">Load NYY vs BOS</button>
-        <button class="btn btn-info" onclick="populateTestCase3()">Load ATL vs CLE</button>
-    `;
-    document.querySelector('.container').insertBefore(testButtons, document.querySelector('.row'));
-}
-
-// Run tests when page loads
+// Initialize the analyzer when page loads
 document.addEventListener('DOMContentLoaded', () => {
     const analyzer = new MLBAnalyzer();
     analyzer.updateTeamStats();
-    runTest();
 }); 
