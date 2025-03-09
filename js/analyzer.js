@@ -4,8 +4,7 @@ import { API_CONFIG } from './api-config.js';
 
 export class MLBAnalyzer {
     constructor() {
-        // Initialize services
-        this.dataService = new DataService();
+        this.dataService = dataService;
         
         // Cache DOM elements
         this.elements = {
