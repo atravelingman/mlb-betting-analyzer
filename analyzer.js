@@ -66,8 +66,12 @@ class MLBAnalyzer {
 
             // Get the team ID from the correct select element
             const teamSelect = document.getElementById(`${side}TeamSelect`);
+            if (!teamSelect) {
+                throw new Error(`Could not find team select element for ${side}`);
+            }
+
             const teamId = teamSelect.value;
-            const teamName = teamSelect.options[teamSelect.selectedIndex].text;
+            const teamName = teamSelect.options[teamSelect.selectedIndex]?.text;
 
             if (!teamId) {
                 throw new Error('No team selected');
@@ -173,7 +177,7 @@ class MLBAnalyzer {
             loadingDiv.style.display = 'none';
 
             // Update the UI with the new stats
-            this.updateTeamFields({ id: teamId, side: side }, stats);
+            await this.updateTeamFields({ id: teamId, side: side }, stats);
 
             return stats;
 
@@ -385,7 +389,7 @@ class MLBAnalyzer {
         console.log('Team stats initialized:', this.teamStats);
     }
 
-    updateTeamFields(team, stats) {
+    async updateTeamFields(team, stats) {
         if (!stats) return;
 
         const side = team.side;
