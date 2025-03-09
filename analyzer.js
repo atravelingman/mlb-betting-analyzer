@@ -151,8 +151,8 @@ class MLBAnalyzer {
             };
 
             // Add tracking for the new stats
-            this.trackStatChanges({ id: teamId, side: teamId.startsWith('home') ? 'home' : 'away' }, stats);
-            this.addUpdate('Stats Updated', `Updated ${teamId.startsWith('home') ? 'home' : 'away'} team statistics`);
+            this.trackStatChanges({ id: teamId, side: teamId }, stats);
+            this.addUpdate('Stats Updated', `Updated ${teamId} team statistics`);
 
             loadingDiv.style.display = 'none';
 
@@ -408,7 +408,7 @@ class MLBAnalyzer {
         }
 
         // Update pitcher dropdown and stats
-        if (stats.pitchers) {
+        if (stats.pitchers && stats.pitchers.length > 0) {
             const select = document.getElementById(`${side}PitcherSelect`);
             
             // Clear existing options
@@ -423,12 +423,13 @@ class MLBAnalyzer {
             });
 
             // Store pitcher stats for later use
-            select.pitcherStats = stats.pitchers;
+            this.pitcherStats = this.pitcherStats || {};
+            this.pitcherStats[side] = stats.pitchers;
 
             // Add/update event listener
             select.onchange = (e) => {
                 if (e.target.value) {
-                    const selectedPitcher = stats.pitchers.find(p => p.id.toString() === e.target.value);
+                    const selectedPitcher = this.pitcherStats[side].find(p => p.id.toString() === e.target.value);
                     if (selectedPitcher && selectedPitcher.stats) {
                         this.updatePitcherStats(side, selectedPitcher.stats);
                     }
