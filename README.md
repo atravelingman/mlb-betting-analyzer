@@ -1,235 +1,171 @@
 # MLB Betting Analyzer
 
-<<<<<<< HEAD
-A sophisticated tool for analyzing MLB matchups and identifying betting value, incorporating team statistics, starting pitcher performance, weather conditions, and advanced game factors.
-=======
-A sophisticated tool for analyzing MLB matchups and identifying betting value, incorporating team statistics, starting pitcher performance, and weather conditions.
->>>>>>> 6071b2357aafe3cf3259970c764f56ddf6ceb634
+A sophisticated web-based tool for analyzing MLB matchups and identifying betting value. The analyzer combines real-time team statistics, starting pitcher performance, weather conditions, and advanced analytics to provide data-driven betting recommendations.
 
-## Features
+![MLB Betting Analyzer](https://raw.githubusercontent.com/atravelingman/mlb-betting-analyzer/main/screenshot.png)
 
-### Team Statistics
-- Batting Statistics:
-  - AVG (Batting Average)
-  - OBP (On-base Percentage)
-  - SLG (Slugging Percentage)
-  - ISO (Isolated Power)
+## 🌟 Features
+
+### Real-Time Statistics
+- **Team Performance Metrics**
+  - Batting Average (AVG)
+  - On-base Percentage (OBP)
+  - Slugging Percentage (SLG)
+  - Isolated Power (ISO)
   - BABIP (Batting Average on Balls in Play)
+  - Team ERA
+  - Team WHIP
 
-- Pitching Statistics:
-  - ERA (Earned Run Average)
-  - WHIP (Walks + Hits per Inning Pitched)
-
-### Starting Pitcher Analysis
-- Individual Pitcher Statistics:
+- **Starting Pitcher Analysis**
   - ERA (Last 3 starts)
   - WHIP (Last 3 starts)
   - K/9 (Strikeouts per 9 innings)
   - BB/9 (Walks per 9 innings)
 
-### Weather Impact Factors
-The analyzer incorporates detailed weather analysis that can significantly impact game outcomes. Each weather condition affects both overall run scoring and home run probability through specific physical effects on ball flight and player performance.
+### Advanced Analytics
 
-| Weather Condition | Runs Factor | HR Factor | Detailed Impact Analysis |
-|------------------|-------------|------------|-------------------------|
-| Normal (65-75°F) | 1.0 | 1.0 | Baseline conditions with moderate temperature and minimal wind. Ideal for normal baseball performance. |
-| Wind Out (10+ mph) | 1.15 | 1.3 | - Increases ball carry distance by 15-25 feet on average\n- Particularly impacts fly balls and potential home runs\n- Most significant in stadiums with shorter fences\n- Greater effect when blowing out to center field |
-| Wind In (10+ mph) | 0.85 | 0.7 | - Reduces ball carry distance by 15-20 feet\n- Turns potential home runs into warning track outs\n- More pronounced effect on fly balls than line drives\n- Creates advantage for ground ball pitchers |
-| Rain | 0.9 | 0.85 | - Heavier baseball reduces ball flight distance\n- Wet field slows ground balls\n- Reduced visibility affects hitting\n- Pitchers may struggle with grip\n- Higher likelihood of errors |
-| Hot (85°F+) | 1.1 | 1.15 | - Air density decreases, increasing ball carry\n- Pitcher fatigue increases more rapidly\n- Baseball becomes more elastic\n- Breaking balls less effective\n- Particularly impactful in day games |
-| Cold (Below 50°F) | 0.9 | 0.8 | - Denser air reduces ball flight\n- Broken bats more common\n- Reduced ball elasticity\n- More painful contact for hitters\n- Pitchers may struggle with grip and feel |
-| Dome | 1.0 | 1.0 | - Controlled environment eliminates weather variables\n- Consistent temperature and humidity\n- No wind effects\n- Optimal visibility\n- Some domes may have specific effects based on their design |
+#### Ballpark Analysis
+- Detailed dimensions for all fields
+- Park-specific run scoring factors
+- Home run index
+- Weather impact considerations
 
-#### Additional Weather Considerations:
-- **Humidity**: High humidity can slightly increase scoring as the baseball becomes less dense
-- **Altitude**: Higher elevation parks (like Coors Field) see increased scoring due to thinner air
-- **Time of Day**: Day games in hot weather show higher scoring than night games
-- **Wind Direction**: Cross-winds can affect pitch movement and fielding
-- **Precipitation**: Even light rain can impact pitcher grip and defensive performance
+#### Head-to-Head Analysis
+- Season series record
+- Last 5 matchups
+- Pitcher vs. Team performance
+- Historical matchup trends
 
-#### How Weather Factors Are Applied:
-1. Base run expectancy is calculated using team and pitcher statistics
-2. Weather factors are applied as multipliers to both runs and home run projections
-3. Multiple weather conditions may be combined (e.g., cold and wind in)
-4. Dome games ignore all weather factors except altitude effects
-5. Weather impacts are weighted more heavily for teams with:
-   - High fly ball rates
-   - Power-hitting lineups
-   - Extreme park factors
+#### Bullpen Status
+- Recent usage tracking
+- Fatigue indicators
+- Performance metrics
+- Availability status
 
-### Run Expectancy Calculation
-The analyzer uses a sophisticated formula that incorporates:
-1. Team OPS (weighted at 4.0)
-2. Starting Pitcher WHIP impact (weighted at 2.5)
-3. Team BABIP (weighted at 1.5)
-4. Isolated Power (weighted at 2.0)
-5. Starting Pitcher ERA impact
-6. Starting Pitcher K/9 impact
-7. Weather adjustments
+#### Injury Impact
+- Real-time injury updates
+- Impact assessment
+- Position-specific analysis
+- Roster depth evaluation
 
-### Value Detection
-The analyzer identifies betting value by comparing projected scores to market lines:
-- Spread threshold: 2.0 runs
-- Total threshold: 3.0 runs
+### Weather Impact Analysis
 
-<<<<<<< HEAD
-### Advanced Game Factors
+| Condition | Run Impact | HR Impact | Details |
+|-----------|------------|-----------|----------|
+| Normal | 1.0x | 1.0x | Baseline conditions |
+| Wind Out | 1.15x | 1.3x | Increased scoring potential |
+| Wind In | 0.85x | 0.7x | Reduced scoring potential |
+| Rain | 0.9x | 0.85x | Slightly suppressed scoring |
+| Hot (85°F+) | 1.1x | 1.15x | Enhanced scoring conditions |
+| Cold (<50°F) | 0.9x | 0.8x | Reduced scoring potential |
+| Dome | 1.0x | 1.0x | Controlled environment |
 
-#### Ballpark Analysis Dropdown
-- **Dimensions**:
-  - Left Field: Distance and wall height
-  - Center Field: Distance and wall height
-  - Right Field: Distance and wall height
-- **Park Factors**:
-  - Run scoring index (100 = neutral)
-  - Home run index
-  - Doubles/Triples index
-  - Foul territory size
+## 🚀 Getting Started
 
-#### Injury Impact Dropdown
-- **Player Status**:
-  - Active (Green)
-  - Day-to-Day (Yellow)
-  - IL-10 (Orange)
-  - IL-60 (Red)
-- **Impact Rating**:
-  - High (Key player/starter)
-  - Medium (Regular contributor)
-  - Low (Bench player)
-- **Position Impact**:
-  - Starting Lineup
-  - Rotation
-  - Bullpen
-  - Bench
+### Prerequisites
+- Modern web browser
+- Internet connection for real-time data
 
-#### Head-to-Head History Dropdown
-- **Season Matchup Record**
-- **Last 5 Games**:
-  - Scores
-  - Starting pitchers
-  - Key performers
-- **Pitcher vs. Team Stats**:
-  - Career ERA
-  - Current season performance
-  - Last 3 starts against team
+### Installation
 
-#### Bullpen Analysis Dropdown
-- **Recent Usage (Last 3 Days)**:
-  - High leverage relievers
-  - Total pitches thrown
-  - Back-to-back appearances
-- **Fatigue Metrics**:
-  - Rest days needed
-  - Availability status
-  - Recent performance trend
-- **Key Stats**:
-  - ERA last 7 days
-  - WHIP last 7 days
-  - Inherited runners scored %
+1. Clone the repository:
+```bash
+git clone https://github.com/atravelingman/mlb-betting-analyzer.git
+```
 
-=======
->>>>>>> 6071b2357aafe3cf3259970c764f56ddf6ceb634
-## How to Use
-
-1. Select home and away teams from the dropdowns
-2. Wait for team statistics to auto-populate
-3. Select starting pitchers for both teams
-4. Choose the weather condition for the game
-<<<<<<< HEAD
-5. **New Analysis Options**:
-   - Select ballpark factors from dropdown
-   - Check injury status for both teams
-   - Review head-to-head history
-   - Check bullpen availability
-6. Enter the market spread and total
-7. Click "Analyze Matchup" to get:
-=======
-5. Enter the market spread and total
-6. Click "Analyze Matchup" to get:
->>>>>>> 6071b2357aafe3cf3259970c764f56ddf6ceb634
-   - Projected scores
-   - Spread value
-   - Total value
-   - Betting recommendations
-<<<<<<< HEAD
-   - Impact analysis of selected factors
-
-### Factor Weights in Analysis
-
-The analyzer now incorporates these additional factors with the following weights:
-- Ballpark Factors: 1.5x multiplier
-- Significant Injuries: 0.8x to 1.0x team strength
-- Head-to-Head Advantage: 1.1x for strong historical performance
-- Bullpen Fatigue: 0.9x to 1.0x late game projection
-=======
->>>>>>> 6071b2357aafe3cf3259970c764f56ddf6ceb634
-
-## Technical Details
-
-The analyzer uses the MLB Stats API to fetch:
-- Current season team statistics
-- Active roster information
-- Individual pitcher statistics
-- Recent performance metrics
-
-All projections are bounded between 2 and 8 runs per team to maintain realistic expectations.
-
-## Installation
-
-1. Clone this repository
-2. Install required packages:
+2. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-## Usage
-
-The algorithm can be used by running the main script:
-
+3. Run the local server:
 ```bash
-python mlb_betting_algorithm.py
+python -m http.server 8000
 ```
 
-To analyze a specific matchup, modify the parameters in the `main()` function:
-
-```python
-home_team = "NYY"  # Home team abbreviation
-away_team = "BOS"  # Away team abbreviation
-market_spread = -1.5  # Negative means home team is favored
-market_total = 8.5  # Over/under total for the game
+4. Open in your browser:
+```
+http://localhost:8000
 ```
 
-## How It Works
+## 📊 How to Use
 
-1. **Data Collection**: The algorithm fetches current season statistics for all MLB teams using the `pybaseball` package.
+1. **Select Teams**
+   - Choose home and away teams from the dropdowns
+   - Statistics automatically populate
 
-2. **Run Expectancy**: Calculates expected runs for each team based on:
-   - Offensive metrics (OPS, wRC+)
-   - Pitching performance (ERA, FIP, WHIP)
+2. **Choose Pitchers**
+   - Select starting pitchers for both teams
+   - View their recent performance metrics
 
-3. **Value Analysis**: Compares projected outcomes to market lines:
-   - Spread value threshold: 2.0 runs
-   - Total value threshold: 3.0 runs
+3. **Set Conditions**
+   - Select weather conditions
+   - Input current market lines
+   - Review ballpark factors
 
-4. **Recommendations**: Provides betting recommendations when the projected difference exceeds thresholds.
+4. **Analyze Results**
+   - Click "Analyze Matchup"
+   - Review projected scores
+   - Check value recommendations
+   - Consider additional factors
 
-## Output
+## 🧮 Analysis Methodology
 
-The algorithm outputs:
-- Spread value (in runs)
-- Total value (in runs)
-- Specific betting recommendations when value is found
+### Run Expectancy Calculation
+The analyzer uses a sophisticated formula incorporating:
+- Team OPS (4.0x weight)
+- Starting Pitcher WHIP (2.5x weight)
+- Team BABIP (1.5x weight)
+- Isolated Power (2.0x weight)
+- Starting Pitcher ERA impact
+- K/9 impact
+- Weather adjustments
 
-## Important Notes
+### Value Detection Thresholds
+- Spread value: 2.0 runs
+- Total value: 3.0 runs
 
-- This is a mathematical model and should be used as one of many tools for betting analysis
-- Always consider other factors like:
-  - Recent team performance
-  - Starting pitchers
-  - Weather conditions
-  - Injuries
-  - Head-to-head history
+## 📱 Modern UI Features
 
-## Disclaimer
+- Responsive design for all devices
+- Real-time updates
+- Interactive statistics display
+- Clear visual indicators
+- Tooltips for advanced metrics
+- Historical tracking
+- Status updates
 
-This tool is for educational purposes only. Please gamble responsibly and in accordance with your local laws and regulations.
+## ⚠️ Disclaimer
+
+This tool is for educational and entertainment purposes only. Please gamble responsibly and in accordance with your local laws and regulations. Past performance does not guarantee future results.
+
+## 🔄 Updates
+
+The analyzer is regularly updated with:
+- Latest MLB statistics
+- New analytical features
+- UI improvements
+- Bug fixes
+- Performance optimizations
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- MLB Stats API for real-time data
+- Bootstrap for UI components
+- Community contributors
+- MLB statistical community
+
+## 📞 Support
+
+For support, please open an issue in the GitHub repository or contact the maintainers directly.
+
+---
+Made with ❤️ for baseball analytics enthusiasts

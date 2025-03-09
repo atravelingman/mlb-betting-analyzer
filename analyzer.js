@@ -391,56 +391,89 @@ class MLBAnalyzer {
         const side = team.side;
         console.log(`Updating ${side} team fields:`, stats);
 
-        // Update form fields with fetched stats
-        if (stats.batting) {
-            document.getElementById(`${side}AVG`).value = stats.batting.avg;
-            document.getElementById(`${side}OBP`).value = stats.batting.obp;
-            document.getElementById(`${side}SLG`).value = stats.batting.slg;
-            document.getElementById(`${side}BABIP`).value = stats.batting.babip;
-            document.getElementById(`${side}ISO`).value = stats.batting.iso;
-        }
+        try {
+            // Update form fields with fetched stats
+            if (stats.batting) {
+                const avgElement = document.getElementById(`${side}AVG`);
+                const obpElement = document.getElementById(`${side}OBP`);
+                const slgElement = document.getElementById(`${side}SLG`);
+                const babipElement = document.getElementById(`${side}BABIP`);
+                const isoElement = document.getElementById(`${side}ISO`);
 
-        if (stats.pitching) {
-            document.getElementById(`${side}ERA`).value = stats.pitching.era;
-            document.getElementById(`${side}WHIP`).value = stats.pitching.whip;
-        }
+                if (avgElement) avgElement.value = stats.batting.avg || '0.000';
+                if (obpElement) obpElement.value = stats.batting.obp || '0.000';
+                if (slgElement) slgElement.value = stats.batting.slg || '0.000';
+                if (babipElement) babipElement.value = stats.batting.babip || '0.000';
+                if (isoElement) isoElement.value = stats.batting.iso || '0.000';
+            }
 
-        // Update pitcher dropdown and stats
-        if (stats.pitchers && stats.pitchers.length > 0) {
-            const select = document.getElementById(`${side}PitcherSelect`);
-            
-            // Clear existing options
-            select.innerHTML = '<option value="">Select pitcher...</option>';
-            
-            // Add new options
-            stats.pitchers.forEach(pitcher => {
-                const option = document.createElement('option');
-                option.value = pitcher.id;
-                option.textContent = pitcher.name;
-                select.appendChild(option);
-            });
+            if (stats.pitching) {
+                const eraElement = document.getElementById(`${side}ERA`);
+                const whipElement = document.getElementById(`${side}WHIP`);
 
-            // Store pitcher stats for later use
-            this.pitcherStats = this.pitcherStats || {};
-            this.pitcherStats[side] = stats.pitchers;
+                if (eraElement) eraElement.value = stats.pitching.era || '0.00';
+                if (whipElement) whipElement.value = stats.pitching.whip || '0.00';
+            }
 
-            // Add/update event listener
-            select.onchange = (e) => {
-                if (e.target.value) {
-                    const selectedPitcher = this.pitcherStats[side].find(p => p.id.toString() === e.target.value);
-                    if (selectedPitcher && selectedPitcher.stats) {
-                        this.updatePitcherStats(side, selectedPitcher.stats);
+            // Update pitcher dropdown and stats
+            const pitcherSelect = document.getElementById(`${side}PitcherSelect`);
+            if (pitcherSelect && stats.pitchers && Array.isArray(stats.pitchers)) {
+                // Clear existing options
+                pitcherSelect.innerHTML = '<option value="">Select pitcher...</option>';
+                
+                // Add new options
+                stats.pitchers.forEach(pitcher => {
+                    if (pitcher && pitcher.id && pitcher.name) {
+                        const option = document.createElement('option');
+                        option.value = pitcher.id;
+                        option.textContent = pitcher.name;
+                        pitcherSelect.appendChild(option);
                     }
-                }
-            };
+                });
+
+                // Store pitcher stats for later use
+                this.pitcherStats = this.pitcherStats || {};
+                this.pitcherStats[side] = stats.pitchers;
+
+                // Add/update event listener
+                pitcherSelect.onchange = (e) => {
+                    if (e.target.value) {
+                        const selectedPitcher = this.pitcherStats[side].find(p => p.id.toString() === e.target.value);
+                        if (selectedPitcher && selectedPitcher.stats) {
+                            this.updatePitcherStats(side, selectedPitcher.stats);
+                        }
+                    } else {
+                        // Clear pitcher stats when no pitcher is selected
+                        this.updatePitcherStats(side, {
+                            era: '0.00',
+                            whip: '0.00',
+                            k9: '0.0',
+                            bb9: '0.0'
+                        });
+                    }
+                };
+            }
+        } catch (error) {
+            console.error('Error updating team fields:', error);
+            showError(`Error updating ${side} team fields: ${error.message}`);
         }
     }
 
     updatePitcherStats(side, stats) {
-        document.getElementById(`${side}StarterERA`).value = stats.era;
-        document.getElementById(`${side}StarterWHIP`).value = stats.whip;
-        document.getElementById(`${side}StarterK9`).value = stats.k9;
-        document.getElementById(`${side}StarterBB9`).value = stats.bb9;
+        try {
+            const eraElement = document.getElementById(`${side}StarterERA`);
+            const whipElement = document.getElementById(`${side}StarterWHIP`);
+            const k9Element = document.getElementById(`${side}StarterK9`);
+            const bb9Element = document.getElementById(`${side}StarterBB9`);
+
+            if (eraElement) eraElement.value = stats.era || '0.00';
+            if (whipElement) whipElement.value = stats.whip || '0.00';
+            if (k9Element) k9Element.value = stats.k9 || '0.0';
+            if (bb9Element) bb9Element.value = stats.bb9 || '0.0';
+        } catch (error) {
+            console.error('Error updating pitcher stats:', error);
+            showError(`Error updating ${side} pitcher stats: ${error.message}`);
+        }
     }
 
     calculateRunExpectancy(stats, weather = 'normal') {
