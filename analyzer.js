@@ -883,24 +883,8 @@ class MLBAnalyzer {
             return;
         }
 
-        const updateHistoryDiv = document.getElementById('updateHistory');
-        if (!updateHistoryDiv) {
-            console.warn('Update history element not found');
-            return;
-        }
-
-        updateHistoryDiv.innerHTML = this.updateHistory
-            .slice(0, 10) // Show last 10 updates
-            .map(update => `
-                <div class="list-group-item">
-                    <div class="d-flex w-100 justify-content-between">
-                        <h6 class="mb-1">${update.type}</h6>
-                        <small>${update.timestamp.toLocaleTimeString()}</small>
-                    </div>
-                    <p class="mb-1">${update.details}</p>
-                </div>
-            `)
-            .join('');
+        // Keep update history in memory for debugging but don't display in UI
+        console.log('Update:', this.updateHistory[0]);
     }
 
     // Add new method to display stat changes
@@ -911,32 +895,8 @@ class MLBAnalyzer {
             return;
         }
 
-        const statsChangesBody = document.getElementById('statsChangesBody');
-        if (!statsChangesBody) {
-            console.warn('Stats changes body element not found');
-            return;
-        }
-        
-        // Add new changes at the top
-        changes.forEach(change => {
-            const row = document.createElement('tr');
-            const changeValue = parseFloat(change.change);
-            const changeClass = changeValue > 0 ? 'text-success' : changeValue < 0 ? 'text-danger' : '';
-            
-            row.innerHTML = `
-                <td>${change.metric}</td>
-                <td>${change.previous}</td>
-                <td>${change.current}</td>
-                <td class="${changeClass}">${changeValue > 0 ? '+' : ''}${change.change}</td>
-            `;
-            
-            statsChangesBody.insertBefore(row, statsChangesBody.firstChild);
-        });
-
-        // Keep only last 20 rows
-        while (statsChangesBody.children.length > 20) {
-            statsChangesBody.removeChild(statsChangesBody.lastChild);
-        }
+        // Keep stat changes in memory for debugging but don't display in UI
+        console.log('Stat changes:', changes);
     }
 }
 
