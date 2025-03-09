@@ -80,32 +80,38 @@ class DataService {
             const endpoint = API_CONFIG.ENDPOINTS.TEAM_STATS.replace('{teamId}', teamId);
             const data = await this.fetchData(endpoint);
             
-            if (!data || !data.stats) {
+            // Check if data exists and has the expected structure
+            if (!data || !data.stats || !Array.isArray(data.stats)) {
+                console.error('Invalid team stats data structure:', data);
                 throw new Error('Invalid team stats data received');
             }
 
             // Find hitting and pitching stats
-            const hittingStats = data.stats.find(stat => stat.group.displayName === 'hitting')?.splits[0]?.stat;
-            const pitchingStats = data.stats.find(stat => stat.group.displayName === 'pitching')?.splits[0]?.stat;
+            const hittingStats = data.stats.find(stat => stat.group === 'hitting' || stat.group.displayName === 'hitting');
+            const pitchingStats = data.stats.find(stat => stat.group === 'pitching' || stat.group.displayName === 'pitching');
 
-            if (!hittingStats || !pitchingStats) {
-                throw new Error('Missing hitting or pitching stats');
+            if (!hittingStats?.splits?.[0]?.stat || !pitchingStats?.splits?.[0]?.stat) {
+                console.error('Missing hitting or pitching stats:', { hittingStats, pitchingStats });
+                throw new Error('Missing team statistics');
             }
+
+            const hitting = hittingStats.splits[0].stat;
+            const pitching = pitchingStats.splits[0].stat;
 
             return {
                 batting: {
-                    avg: Utils.formatNumber(hittingStats.avg, 3),
-                    obp: Utils.formatNumber(hittingStats.obp, 3),
-                    slg: Utils.formatNumber(hittingStats.slg, 3),
-                    ops: Utils.formatNumber(hittingStats.ops, 3),
-                    iso: Utils.formatNumber(hittingStats.slg - hittingStats.avg, 3),
-                    babip: Utils.formatNumber(hittingStats.babip, 3)
+                    avg: Utils.formatNumber(hitting.avg || 0, 3),
+                    obp: Utils.formatNumber(hitting.obp || 0, 3),
+                    slg: Utils.formatNumber(hitting.slg || 0, 3),
+                    ops: Utils.formatNumber(hitting.ops || 0, 3),
+                    iso: Utils.formatNumber((hitting.slg || 0) - (hitting.avg || 0), 3),
+                    babip: Utils.formatNumber(hitting.babip || 0, 3)
                 },
                 pitching: {
-                    era: Utils.formatNumber(pitchingStats.era, 2),
-                    whip: Utils.formatNumber(pitchingStats.whip, 2),
-                    k9: Utils.formatNumber(pitchingStats.strikeoutsPer9Inn, 1),
-                    bb9: Utils.formatNumber(pitchingStats.walksPer9Inn, 1)
+                    era: Utils.formatNumber(pitching.era || 0, 2),
+                    whip: Utils.formatNumber(pitching.whip || 0, 2),
+                    k9: Utils.formatNumber(pitching.strikeoutsPer9Inn || 0, 1),
+                    bb9: Utils.formatNumber(pitching.walksPer9Inn || 0, 1)
                 }
             };
         } catch (error) {
