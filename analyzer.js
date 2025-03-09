@@ -441,13 +441,29 @@ class MLBAnalyzer {
 
                 // Add/update event listener
                 pitcherSelect.onchange = (e) => {
-                    if (e.target.value) {
-                        const selectedPitcher = this.pitcherStats[side].find(p => p.id.toString() === e.target.value);
-                        if (selectedPitcher && selectedPitcher.stats) {
-                            this.updatePitcherStats(side, selectedPitcher.stats);
+                    try {
+                        if (e.target.value) {
+                            if (!this.pitcherStats || !this.pitcherStats[side]) {
+                                throw new Error('Pitcher stats not available');
+                            }
+                            const selectedPitcher = this.pitcherStats[side].find(p => p && p.id && p.id.toString() === e.target.value);
+                            if (selectedPitcher && selectedPitcher.stats) {
+                                this.updatePitcherStats(side, selectedPitcher.stats);
+                            } else {
+                                throw new Error('Selected pitcher stats not found');
+                            }
+                        } else {
+                            // Clear pitcher stats when no pitcher is selected
+                            this.updatePitcherStats(side, {
+                                era: '0.00',
+                                whip: '0.00',
+                                k9: '0.0',
+                                bb9: '0.0'
+                            });
                         }
-                    } else {
-                        // Clear pitcher stats when no pitcher is selected
+                    } catch (error) {
+                        console.error('Error updating pitcher stats:', error);
+                        showError(`Error updating pitcher stats: ${error.message}`);
                         this.updatePitcherStats(side, {
                             era: '0.00',
                             whip: '0.00',
@@ -485,26 +501,33 @@ class MLBAnalyzer {
             // Get weather adjustment factors
             const weatherFactor = this.WEATHER_FACTORS[weather] || this.WEATHER_FACTORS.normal;
             
-            // Get starter stats
-            const starterERA = parseFloat(document.getElementById(`${stats.side}StarterERA`)?.value) || stats.era || 4.50;
-            const starterWHIP = parseFloat(document.getElementById(`${stats.side}StarterWHIP`)?.value) || stats.whip || 1.30;
-            const starterK9 = parseFloat(document.getElementById(`${stats.side}StarterK9`)?.value) || 8.5;
+            // Get starter stats with validation
+            const starterERA = this.validateNumber(parseFloat(document.getElementById(`${stats.side}StarterERA`)?.value)) || stats.era || 4.50;
+            const starterWHIP = this.validateNumber(parseFloat(document.getElementById(`${stats.side}StarterWHIP`)?.value)) || stats.whip || 1.30;
+            const starterK9 = this.validateNumber(parseFloat(document.getElementById(`${stats.side}StarterK9`)?.value)) || 8.5;
+            
+            // Validate input stats
+            const validatedStats = {
+                ops: this.validateNumber(stats.ops) || 0,
+                babip: this.validateNumber(stats.babip) || 0,
+                iso: this.validateNumber(stats.iso) || 0
+            };
             
             // Base run expectancy calculation with starter impact
             const baseExpectedRuns = (
-                (stats.ops || 0) * 4.0 + // OPS factor (reduced weight)
+                validatedStats.ops * 4.0 + // OPS factor (reduced weight)
                 (1 - starterWHIP) * 2.5 + // Starting pitcher WHIP factor (increased weight)
-                (stats.babip || 0) * 1.5 + // Batting average on balls in play
-                (stats.iso || 0) * 2.0 + // Isolated power
+                validatedStats.babip * 1.5 + // Batting average on balls in play
+                validatedStats.iso * 2.0 + // Isolated power
                 ((starterERA - 4.5) * 0.2) + // ERA impact
                 ((starterK9 - 8.5) * -0.1) // Strikeout impact (negative means better)
             );
 
             // Apply weather adjustments
-            const weatherAdjustedRuns = baseExpectedRuns * weatherFactor.runs;
+            const weatherAdjustedRuns = this.validateNumber(baseExpectedRuns * weatherFactor.runs) || 4.5;
             
             // Additional HR factor adjustment for extreme weather
-            const hrAdjustment = (stats.iso || 0) * (weatherFactor.hr - 1) * 0.5;
+            const hrAdjustment = this.validateNumber(validatedStats.iso * (weatherFactor.hr - 1) * 0.5) || 0;
             
             // Return weather-adjusted run expectancy, bounded between 2 and 8 runs
             return Math.max(2, Math.min(8, weatherAdjustedRuns + hrAdjustment));
@@ -594,9 +617,9 @@ class MLBAnalyzer {
 
     findValue(homeTeam, awayTeam, marketSpread, marketTotal, weather = 'normal') {
         try {
-            // Calculate run expectancy for both teams
-            const homeOPS = parseFloat(homeTeam.obp) + parseFloat(homeTeam.slg);
-            const awayOPS = parseFloat(awayTeam.obp) + parseFloat(awayTeam.slg);
+            // Calculate run expectancy for both teams with validation
+            const homeOPS = this.validateNumber(parseFloat(homeTeam.obp) + parseFloat(homeTeam.slg)) || 0;
+            const awayOPS = this.validateNumber(parseFloat(awayTeam.obp) + parseFloat(awayTeam.slg)) || 0;
 
             const homeExpectedRuns = this.calculateRunExpectancy({
                 ...homeTeam,
@@ -608,11 +631,11 @@ class MLBAnalyzer {
                 ops: awayOPS
             }, weather);
 
-            const projectedSpread = homeExpectedRuns - awayExpectedRuns;
-            const projectedTotal = homeExpectedRuns + awayExpectedRuns;
+            const projectedSpread = this.validateNumber(homeExpectedRuns - awayExpectedRuns) || 0;
+            const projectedTotal = this.validateNumber(homeExpectedRuns + awayExpectedRuns) || 0;
 
-            const spreadValue = projectedSpread - (marketSpread || 0);
-            const totalValue = projectedTotal - (marketTotal || 0);
+            const spreadValue = this.validateNumber(projectedSpread - (marketSpread || 0)) || 0;
+            const totalValue = this.validateNumber(projectedTotal - (marketTotal || 0)) || 0;
 
             const recommendations = [];
 
@@ -897,6 +920,11 @@ class MLBAnalyzer {
 
         // Keep stat changes in memory for debugging but don't display in UI
         console.log('Stat changes:', changes);
+    }
+
+    // Add new helper method for number validation
+    validateNumber(value) {
+        return !isNaN(value) && isFinite(value) ? value : null;
     }
 }
 
