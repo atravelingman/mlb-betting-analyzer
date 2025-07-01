@@ -121,7 +121,12 @@ const config = {
 };
 
 // Environment-specific overrides
-if (process.env.NODE_ENV === 'development') {
+if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
+    config.debug.enabled = true;
+    config.debug.logLevel = 'debug';
+    config.cache.duration = 60000; // 1 minute in development
+} else if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+    // Development mode for local testing
     config.debug.enabled = true;
     config.debug.logLevel = 'debug';
     config.cache.duration = 60000; // 1 minute in development

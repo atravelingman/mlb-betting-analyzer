@@ -437,7 +437,7 @@ class MLBAnalyzer {
             );
 
             if (results) {
-                updateUIWithResults(results);
+                this.updateUIWithResults(results);
                 const lastUpdateElement = document.getElementById('lastUpdate');
                 if (lastUpdateElement) {
                     lastUpdateElement.textContent = new Date().toLocaleString();
@@ -448,7 +448,408 @@ class MLBAnalyzer {
         }
     }
 
-    // ... rest of the methods remain the same ...
+    // Missing methods implementation
+
+    async updateTeamFields(team, stats) {
+        try {
+            const side = team.side;
+            
+            // Update batting stats
+            const battingStats = stats.batting || {};
+            document.getElementById(`${side}AVG`).value = battingStats.avg || '0.000';
+            document.getElementById(`${side}OBP`).value = battingStats.obp || '0.000';
+            document.getElementById(`${side}SLG`).value = battingStats.slg || '0.000';
+            document.getElementById(`${side}ISO`).value = battingStats.iso || '0.000';
+            document.getElementById(`${side}BABIP`).value = battingStats.babip || '0.000';
+
+            // Update pitching stats
+            const pitchingStats = stats.pitching || {};
+            document.getElementById(`${side}ERA`).value = pitchingStats.era || '0.00';
+            document.getElementById(`${side}WHIP`).value = pitchingStats.whip || '0.00';
+
+            // Update pitcher dropdown
+            const pitcherSelect = document.getElementById(`${side}PitcherSelect`);
+            if (pitcherSelect && stats.pitchers) {
+                pitcherSelect.innerHTML = '<option value="">Select pitcher...</option>' +
+                    stats.pitchers.map(pitcher => 
+                        `<option value="${pitcher.id}">${pitcher.name}</option>`
+                    ).join('');
+
+                // Add event listener for pitcher selection
+                pitcherSelect.addEventListener('change', () => {
+                    const selectedPitcher = stats.pitchers.find(p => p.id == pitcherSelect.value);
+                    if (selectedPitcher?.stats) {
+                        document.getElementById(`${side}StarterERA`).value = selectedPitcher.stats.era || '0.00';
+                        document.getElementById(`${side}StarterWHIP`).value = selectedPitcher.stats.whip || '0.00';
+                        document.getElementById(`${side}StarterK9`).value = selectedPitcher.stats.k9 || '0.0';
+                        document.getElementById(`${side}StarterBB9`).value = selectedPitcher.stats.bb9 || '0.0';
+                    }
+                });
+            }
+
+        } catch (error) {
+            console.error('Error updating team fields:', error);
+            this.errorHandler.handleApiError(error, 'Team fields update');
+        }
+    }
+
+    getTeamData(side) {
+        try {
+            const teamSelect = document.getElementById(`${side}TeamSelect`);
+            const teamId = teamSelect?.value;
+            
+            if (!teamId) {
+                throw new Error(`No ${side} team selected`);
+            }
+
+            return this.teamStats[teamId] || null;
+        } catch (error) {
+            console.error(`Error getting ${side} team data:`, error);
+            return null;
+        }
+    }
+
+    findValue(homeTeam, awayTeam, marketSpread, marketTotal, weather) {
+        try {
+            if (!homeTeam?.stats || !awayTeam?.stats) {
+                throw new Error('Team statistics not available');
+            }
+
+            // Calculate offensive and pitching advantages
+            const homeOffensive = parseFloat(homeTeam.stats.batting.obp) + parseFloat(homeTeam.stats.batting.slg);
+            const awayOffensive = parseFloat(awayTeam.stats.batting.obp) + parseFloat(awayTeam.stats.batting.slg);
+            const homePitching = parseFloat(homeTeam.stats.pitching.era);
+            const awayPitching = parseFloat(awayTeam.stats.pitching.era);
+
+            const offensiveAdvantage = homeOffensive - awayOffensive;
+            const pitchingAdvantage = awayPitching - homePitching;
+
+            // Calculate projected runs with weather adjustment
+            const weatherFactor = config.weather[weather] || config.weather.normal;
+            const projectedHomeRuns = (homeOffensive * 4.5 + (pitchingAdvantage * 0.5)) * weatherFactor.runs;
+            const projectedAwayRuns = (awayOffensive * 4.5 + (-pitchingAdvantage * 0.5)) * weatherFactor.runs;
+            const projectedTotal = projectedHomeRuns + projectedAwayRuns;
+            const projectedSpread = projectedHomeRuns - projectedAwayRuns;
+
+            // Calculate value
+            const spreadValue = Math.abs(projectedSpread - marketSpread);
+            const totalValue = Math.abs(projectedTotal - marketTotal);
+
+            return {
+                homeTeam: homeTeam.name,
+                awayTeam: awayTeam.name,
+                projectedHomeRuns: projectedHomeRuns.toFixed(1),
+                projectedAwayRuns: projectedAwayRuns.toFixed(1),
+                projectedTotal: projectedTotal.toFixed(1),
+                projectedSpread: projectedSpread.toFixed(1),
+                marketSpread: marketSpread,
+                marketTotal: marketTotal,
+                spreadValue: spreadValue.toFixed(2),
+                totalValue: totalValue.toFixed(2),
+                offensiveAdvantage: offensiveAdvantage.toFixed(3),
+                pitchingAdvantage: pitchingAdvantage.toFixed(2),
+                confidence: Utils.calculateConfidence({
+                    spreadValue: spreadValue / 5,
+                    totalValue: totalValue / 5,
+                    offensiveAdvantage: Math.abs(offensiveAdvantage),
+                    pitchingAdvantage: Math.abs(pitchingAdvantage) / 5
+                }),
+                weather: weather
+            };
+        } catch (error) {
+            console.error('Error calculating value:', error);
+            this.errorHandler.handleApiError(error, 'Value calculation');
+            return null;
+        }
+    }
+
+    addUpdate(title, message) {
+        const timestamp = new Date().toLocaleTimeString();
+        this.updateHistory.unshift({
+            title,
+            message,
+            timestamp
+        });
+        
+        // Keep only last 10 updates
+        if (this.updateHistory.length > 10) {
+            this.updateHistory = this.updateHistory.slice(0, 10);
+        }
+        
+        console.log(`[${timestamp}] ${title}: ${message}`);
+    }
+
+    trackStatChanges(team, newStats) {
+        const key = `${team.id}_${team.side}`;
+        const previousStats = this.previousStats[key];
+        
+        if (previousStats) {
+            // Compare and log changes
+            const changes = this.compareStats(previousStats, newStats);
+            if (changes.length > 0) {
+                this.addUpdate('Stats Changed', `${team.side} team stats updated: ${changes.join(', ')}`);
+            }
+        }
+        
+        this.previousStats[key] = Utils.deepClone(newStats);
+    }
+
+    compareStats(oldStats, newStats) {
+        const changes = [];
+        
+        // Compare batting stats
+        if (oldStats.batting && newStats.batting) {
+            Object.keys(newStats.batting).forEach(key => {
+                if (oldStats.batting[key] !== newStats.batting[key]) {
+                    changes.push(`${key.toUpperCase()}: ${oldStats.batting[key]} → ${newStats.batting[key]}`);
+                }
+            });
+        }
+        
+        return changes;
+    }
+
+    updateH2HDisplay(record, gamesHtml) {
+        const recordElement = document.getElementById('seasonRecord');
+        const gamesTableBody = document.getElementById('lastFiveGames');
+        
+        if (recordElement) {
+            recordElement.textContent = record;
+        }
+        
+        if (gamesTableBody) {
+            gamesTableBody.innerHTML = gamesHtml;
+        }
+    }
+
+    calculateH2HRecord(games, homeTeamId) {
+        let wins = 0;
+        let losses = 0;
+        
+        games.forEach(gameDate => {
+            gameDate.games.forEach(game => {
+                if (game.teams?.home?.team?.id == homeTeamId) {
+                    const homeScore = game.teams.home.score || 0;
+                    const awayScore = game.teams.away.score || 0;
+                    
+                    if (homeScore > awayScore) wins++;
+                    else if (awayScore > homeScore) losses++;
+                }
+            });
+        });
+        
+        return { wins, losses };
+    }
+
+    formatLastGames(games) {
+        if (!games?.length) {
+            return '<tr><td colspan="3">No recent games found</td></tr>';
+        }
+        
+        return games.map(gameDate => {
+            return gameDate.games.map(game => {
+                const date = Utils.formatDate(game.gameDate);
+                const homeTeam = game.teams?.home?.team?.name || 'Unknown';
+                const awayTeam = game.teams?.away?.team?.name || 'Unknown';
+                const homeScore = game.teams?.home?.score || 0;
+                const awayScore = game.teams?.away?.score || 0;
+                const homePitcher = game.teams?.home?.probablePitcher?.fullName || 'TBD';
+                const awayPitcher = game.teams?.away?.probablePitcher?.fullName || 'TBD';
+                
+                return `
+                    <tr>
+                        <td>${date}</td>
+                        <td>${awayTeam} ${awayScore} - ${homeScore} ${homeTeam}</td>
+                        <td>${awayPitcher} vs ${homePitcher}</td>
+                    </tr>
+                `;
+            }).join('');
+        }).join('');
+    }
+
+    getInjuryStatusClass(status) {
+        switch (status?.toLowerCase()) {
+            case 'day-to-day':
+                return 'status-yellow';
+            case '10-day il':
+            case '15-day il':
+                return 'status-orange';
+            case '60-day il':
+            case 'out for season':
+                return 'status-red';
+            default:
+                return 'status-green';
+        }
+    }
+
+    calculateImpact(injury) {
+        const position = injury?.player?.primaryPosition?.name?.toLowerCase();
+        const status = injury?.status?.toLowerCase();
+        
+        if (status?.includes('60-day') || status?.includes('season')) {
+            return 'High';
+        } else if (status?.includes('15-day') || status?.includes('10-day')) {
+            return 'Medium';
+        } else {
+            return 'Low';
+        }
+    }
+
+    calculatePitcherFatigue(pitcher) {
+        const recentGames = pitcher?.recentGames || [];
+        const daysRest = pitcher?.daysRest || 0;
+        
+        if (daysRest === 0) {
+            return { level: 'High', color: '#f44336', available: false };
+        } else if (daysRest === 1) {
+            return { level: 'Medium', color: '#ffc107', available: recentGames.length < 2 };
+        } else {
+            return { level: 'Low', color: '#4caf50', available: true };
+        }
+    }
+
+    updateUIWithResults(results) {
+        try {
+            const resultsContainer = document.getElementById('results');
+            if (!resultsContainer) {
+                console.error('Results container not found');
+                return;
+            }
+
+            const confidenceClass = results.confidence === 'High' ? 'success' : 
+                                  results.confidence === 'Medium' ? 'warning' : 'secondary';
+
+            const resultsHTML = `
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Analysis Results</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-4">
+                                    <div class="col-md-6">
+                                        <h6 class="mb-3">Matchup Overview</h6>
+                                        <div class="team-comparison">
+                                            <div class="text-center">
+                                                <strong>${results.awayTeam}</strong><br>
+                                                <small>Away Team</small>
+                                            </div>
+                                            <div class="vs-badge">VS</div>
+                                            <div class="text-center">
+                                                <strong>${results.homeTeam}</strong><br>
+                                                <small>Home Team</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6 class="mb-3">Confidence Level</h6>
+                                        <span class="badge bg-${confidenceClass} fs-6 p-2">${results.confidence}</span>
+                                        <p class="mt-2 mb-0 text-muted">
+                                            Weather: ${results.weather.charAt(0).toUpperCase() + results.weather.slice(1)}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card border-0 bg-light">
+                                            <div class="card-body">
+                                                <h6 class="card-title">Projected Totals</h6>
+                                                <div class="row text-center">
+                                                    <div class="col-6">
+                                                        <div class="stat-value">${results.projectedHomeRuns}</div>
+                                                        <div class="stat-label">Home Runs</div>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <div class="stat-value">${results.projectedAwayRuns}</div>
+                                                        <div class="stat-label">Away Runs</div>
+                                                    </div>
+                                                </div>
+                                                <hr>
+                                                <div class="text-center">
+                                                    <div class="stat-value">${results.projectedTotal}</div>
+                                                    <div class="stat-label">Total Runs</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card border-0 bg-light">
+                                            <div class="card-body">
+                                                <h6 class="card-title">Market Comparison</h6>
+                                                <div class="row text-center">
+                                                    <div class="col-6">
+                                                        <div class="stat-value">${results.projectedSpread}</div>
+                                                        <div class="stat-label">Proj. Spread</div>
+                                                        <small class="text-muted">vs ${results.marketSpread}</small>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <div class="stat-value">${results.projectedTotal}</div>
+                                                        <div class="stat-label">Proj. Total</div>
+                                                        <small class="text-muted">vs ${results.marketTotal}</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-12">
+                                        <h6 class="mb-3">Value Analysis</h6>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm stats-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Metric</th>
+                                                        <th>Value</th>
+                                                        <th>Interpretation</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td>Spread Value</td>
+                                                        <td class="stat-value">${results.spreadValue}</td>
+                                                        <td>${parseFloat(results.spreadValue) > 2 ? 'Strong value' : parseFloat(results.spreadValue) > 1 ? 'Moderate value' : 'Limited value'}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Total Value</td>
+                                                        <td class="stat-value">${results.totalValue}</td>
+                                                        <td>${parseFloat(results.totalValue) > 3 ? 'Strong value' : parseFloat(results.totalValue) > 1.5 ? 'Moderate value' : 'Limited value'}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Offensive Advantage</td>
+                                                        <td class="stat-value">${results.offensiveAdvantage}</td>
+                                                        <td>${Math.abs(parseFloat(results.offensiveAdvantage)) > 0.1 ? 'Significant' : 'Minimal'}</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>Pitching Advantage</td>
+                                                        <td class="stat-value">${results.pitchingAdvantage}</td>
+                                                        <td>${Math.abs(parseFloat(results.pitchingAdvantage)) > 1 ? 'Significant' : 'Minimal'}</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            resultsContainer.innerHTML = resultsHTML;
+            
+            // Scroll to results
+            resultsContainer.scrollIntoView({ behavior: 'smooth' });
+            
+        } catch (error) {
+            console.error('Error updating UI with results:', error);
+            this.errorHandler.handleApiError(error, 'Results display');
+        }
+    }
 }
 
 // Initialize on DOM load

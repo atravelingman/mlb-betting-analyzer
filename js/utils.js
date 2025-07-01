@@ -1,4 +1,4 @@
-export class Utils {
+class Utils {
     /**
      * Format a number to a specific number of decimal places
      * @param {number} value - The number to format

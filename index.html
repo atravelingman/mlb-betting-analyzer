@@ -671,7 +671,20 @@
 
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Custom JS -->
-    <script type="module" src="js/main.js"></script>
+    <!-- Custom JS - Load in order -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/error-handler.js"></script>
+    <script src="js/loading-handler.js"></script>
+    <script src="js/api-service.js"></script>
+    <script src="js/data-service.js"></script>
+    <script src="js/analyzer.js"></script>
+    <script>
+        // Initialize the analyzer when the DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Initializing MLB Analyzer...');
+            window.analyzer = new MLBAnalyzer();
+        });
+    </script>
 </body>
 </html> 
