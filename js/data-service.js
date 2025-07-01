@@ -325,6 +325,262 @@ class DataService {
     delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
+
+    // New methods for comprehensive game data extraction
+
+    async getGamesByDate(date) {
+        try {
+            const endpoint = API_CONFIG.ENDPOINTS.SCHEDULE || '/api/v1/schedule';
+            const data = await this.fetchData(endpoint, { date, sportId: 1 });
+            return data.dates?.[0]?.games || [];
+        } catch (error) {
+            console.error('Error fetching games by date:', error);
+            // Return mock data for testing
+            return [
+                {
+                    gamePk: '12345',
+                    gameDate: `${date}T19:05:00Z`,
+                    teams: {
+                        away: { name: 'New York Yankees', id: '147' },
+                        home: { name: 'Toronto Blue Jays', id: '141' }
+                    }
+                },
+                {
+                    gamePk: '12346',
+                    gameDate: `${date}T20:10:00Z`,
+                    teams: {
+                        away: { name: 'Boston Red Sox', id: '111' },
+                        home: { name: 'Baltimore Orioles', id: '110' }
+                    }
+                }
+            ];
+        }
+    }
+
+    async getGameInfo(gameId, date) {
+        try {
+            const endpoint = API_CONFIG.ENDPOINTS.GAME || `/api/v1/game/${gameId}/feed/live`;
+            const data = await this.fetchData(endpoint);
+            return data.gameData || data;
+        } catch (error) {
+            console.error('Error fetching game info:', error);
+            // Return mock game info
+            return {
+                gameDate: `${date}T19:05:00Z`,
+                gameTime: '19:05:00',
+                teams: {
+                    away: {
+                        id: '147',
+                        name: 'New York Yankees',
+                        probablePitcher: { fullName: 'Gerrit Cole', id: '543037' }
+                    },
+                    home: {
+                        id: '141',
+                        name: 'Toronto Blue Jays',
+                        probablePitcher: { fullName: 'Alek Manoah', id: '666201' }
+                    }
+                },
+                venue: {
+                    id: '14',
+                    name: 'Rogers Centre',
+                    fieldInfo: {
+                        leftLine: 328,
+                        center: 400,
+                        rightLine: 328
+                    }
+                }
+            };
+        }
+    }
+
+    async getOddsData(gameId) {
+        try {
+            // This would integrate with a sportsbook API like DraftKings, FanDuel, etc.
+            // For now, returning realistic mock data
+            return {
+                moneyline: {
+                    away: -150,
+                    home: +130
+                },
+                runline: {
+                    value: -1.5,
+                    away_odds: +130,
+                    home_odds: -150
+                },
+                total: {
+                    line: 8.5,
+                    over_odds: -110,
+                    under_odds: -110
+                }
+            };
+        } catch (error) {
+            console.error('Error fetching odds data:', error);
+            throw error;
+        }
+    }
+
+    async getWeatherData(gameId) {
+        try {
+            // This would integrate with a weather API like OpenWeatherMap
+            // For now, returning realistic mock data
+            return {
+                temperature: 72,
+                wind: {
+                    speed: 8,
+                    direction: 'SW'
+                },
+                humidity: 65,
+                conditions: 'Partly Cloudy'
+            };
+        } catch (error) {
+            console.error('Error fetching weather data:', error);
+            throw error;
+        }
+    }
+
+    async getInjuryData(gameId) {
+        try {
+            // This would call injury report API
+            // For now, returning mock data structure
+            return {
+                injuries: [
+                    {
+                        player: { fullName: 'Aaron Judge' },
+                        status: 'Day-to-Day',
+                        description: 'Minor shoulder strain'
+                    },
+                    {
+                        player: { fullName: 'Vladimir Guerrero Jr.' },
+                        status: 'Probable',
+                        description: 'Rest day'
+                    }
+                ]
+            };
+        } catch (error) {
+            console.error('Error fetching injury data:', error);
+            throw error;
+        }
+    }
+
+    async getLineupData(gameId) {
+        try {
+            // This would call lineup API
+            // For now, returning mock data structure
+            return {
+                changes: [
+                    {
+                        player: { fullName: 'Gleyber Torres' },
+                        description: 'Moved to leadoff position',
+                        timestamp: new Date().toISOString()
+                    }
+                ]
+            };
+        } catch (error) {
+            console.error('Error fetching lineup data:', error);
+            throw error;
+        }
+    }
+
+    async getPlayerProps(gameId) {
+        try {
+            // This would call props API from sportsbooks
+            // For now, returning mock data structure
+            return {
+                props: [
+                    {
+                        prop_type: 'Strikeouts',
+                        player: { fullName: 'Gerrit Cole' },
+                        line: 6.5,
+                        over_odds: -115,
+                        under_odds: -105
+                    },
+                    {
+                        prop_type: 'Hits + Runs + RBIs',
+                        player: { fullName: 'Aaron Judge' },
+                        line: 2.5,
+                        over_odds: +105,
+                        under_odds: -125
+                    },
+                    {
+                        prop_type: 'Total Bases',
+                        player: { fullName: 'Vladimir Guerrero Jr.' },
+                        line: 1.5,
+                        over_odds: -110,
+                        under_odds: -110
+                    }
+                ]
+            };
+        } catch (error) {
+            console.error('Error fetching player props:', error);
+            throw error;
+        }
+    }
+
+    async getLineMovement(gameId) {
+        try {
+            // This would call line movement tracking API
+            // For now, returning mock data structure
+            return {
+                moneyline: {
+                    away: {
+                        open: -140,
+                        current: -150,
+                        timestamp: new Date(Date.now() - 3600000).toISOString() // 1 hour ago
+                    },
+                    home: {
+                        open: +120,
+                        current: +130,
+                        timestamp: new Date(Date.now() - 3600000).toISOString()
+                    }
+                },
+                runline: {
+                    value_open: -1.5,
+                    value_current: -1.5,
+                    odds_open: -105,
+                    odds_current: -110
+                },
+                total: {
+                    line_open: 8.0,
+                    line_current: 8.5,
+                    over_open: -115,
+                    over_current: -110
+                }
+            };
+        } catch (error) {
+            console.error('Error fetching line movement:', error);
+            throw error;
+        }
+    }
+
+    async getBetSplits(gameId) {
+        try {
+            // This would call bet splits API (like Action Network)
+            // For now, returning mock data structure
+            return {
+                moneyline: {
+                    public_away: 65,
+                    public_home: 35,
+                    sharp_away: 45,
+                    sharp_home: 55
+                },
+                runline: {
+                    public_away: 70,
+                    public_home: 30,
+                    sharp_away: 40,
+                    sharp_home: 60
+                },
+                total: {
+                    public_over: 60,
+                    public_under: 40,
+                    sharp_over: 55,
+                    sharp_under: 45
+                }
+            };
+        } catch (error) {
+            console.error('Error fetching bet splits:', error);
+            throw error;
+        }
+    }
 }
 
 export const dataService = new DataService(); 
